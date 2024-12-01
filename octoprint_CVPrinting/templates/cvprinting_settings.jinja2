@@ -1,0 +1,22 @@
+<div class="WebcamePreview">
+    <label class="webcamPreviewLabel">Webcam preview</label>
+    <img src="{{ plugin_CVPrinting_snapshotUrl }}" alt="Webcam preview" style="width:80%;height:80%;">
+</div>
+
+<label class="settingsLabel">Settings</label>
+<form class="form-horizontal">
+    <class="control-group">
+        <label class="control-laabel">Pause print when issue is detected</label>
+        <div class="controls">
+            <input type="checkbox" id="pause_on_issue" data-bind="checked: settings.plugins.CVPrinting.pausePrintOnIssue">
+        </div>
+        <label class="control-laabel">At what level of confidence should print get paused?</label>
+        <div class="controls">
+            <input type="range" id="confidence_level" data-bind="value: settings.plugins.CVPrinting.pauseTreshold">
+        </div>
+        <label class="control-laabel">At what level do you want to receive a  warning?</label>
+        <div class="controls">
+            <input type="range" id="warning_level" data-bind="value: settings.plugins.CVPrinting.warningTreshold">
+        </div>
+    </class>
+</form>

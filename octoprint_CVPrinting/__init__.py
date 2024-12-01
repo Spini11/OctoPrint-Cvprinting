@@ -1,78 +1,77 @@
-# coding=utf-8
-from __future__ import absolute_import
-
-### (Don't forget to remove me)
-# This is a basic skeleton for your plugin's __init__.py. You probably want to adjust the class name of your plugin
-# as well as the plugin mixins it's subclassing from. This is really just a basic skeleton to get you started,
-# defining your plugin as a template plugin, settings and asset plugin. Feel free to add or remove mixins
-# as necessary.
-#
-# Take a look at the documentation on what other plugin mixins are available.
-
+import os
+import time
 import octoprint.plugin
+from pathlib import Path
+from octoprint.schema.webcam import Webcam, WebcamCompatibility
+import yaml
 
-class CvprintingPlugin(octoprint.plugin.SettingsPlugin,
-    octoprint.plugin.AssetPlugin,
-    octoprint.plugin.TemplatePlugin
-):
-
-    ##~~ SettingsPlugin mixin
-
+class CVPluginInit(octoprint.plugin.StartupPlugin,
+                       octoprint.plugin.SettingsPlugin,
+                       octoprint.plugin.TemplatePlugin,
+                       octoprint.plugin.WebcamProviderPlugin):
+    def on_after_startup(self):
+        # Print all the current settings
+        self._logger.info("CVPrinting plugin started!")
+        self._logger.info("Current settings: PausePrint: %s  PauseTreshold %s  WarningTeshold %s" % (self._settings.get(["pausePrintOnIssue"]), self._settings.get(["pauseTreshold"]), self._settings.get(["warningTreshold"])))
+        webcam = self.get_webcam_configurations()
+        self._logger.info("Webcam snapshot url: %s" % webcam[0].compat.snapshot)
+        self._logger.info("Webcam stream url: %s" % webcam[0].compat.stream)
+        self._settings.set(["snapshot_url"], webcam[0].compat.snapshot)
+        self._settings.set(["stream_url"], webcam[0].compat.stream)
+        self._logger.info("Settings snapshot url: %s" % self._settings.get(["snapshot_url"]))
+        self._logger.info("Settings stream url: %s" % self._settings.get(["stream_url"]))
     def get_settings_defaults(self):
-        return {
-            # put your plugin's default settings here
-        }
+        return dict(pausePrintOnIssue=False, pauseTreshold=0.8, warningTreshold=0.5, snapshot_url="", stream_url="")
+    
+    def get_template_vars(self):
+        return dict(pausePrintOnIssue=self._settings.get(["pausePrintOnIssue"]), pauseTreshold=self._settings.get(["pauseTreshold"]), warningTreshold=self._settings.get(["warningTreshold"]), snapshotUrl=self._settings.get(["snapshot_url"]), streamUrl=self._settings.get(["stream_url"]))
 
-    ##~~ AssetPlugin mixin
-
+    def get_template_configs(self):
+        return [dict(type="settings", custom_bindings=False)]
+    
     def get_assets(self):
-        # Define your plugin's asset files to automatically include in the
-        # core UI here.
-        return {
-            "js": ["js/CVPrinting.js"],
-            "css": ["css/CVPrinting.css"],
-            "less": ["less/CVPrinting.less"]
-        }
+        return dict(
+            js=["js/cvprinting_settings.js"]
+        )
 
-    ##~~ Softwareupdate hook
+    def get_webcam_configurations(self):
+        urls = self.get_webcam_links()
+        return [
+            Webcam(
+                name="CVPrinting",
+                displayName="Classic webcam",
+                canSnapshot=True,
+                compat=WebcamCompatibility(
+                    snapshot=urls.get("snapshot_url"),
+                    stream=urls.get("stream_url"),
+                ),
+            )
+        ]
 
-    def get_update_information(self):
-        # Define the configuration for your plugin to use with the Software Update
-        # Plugin here. See https://docs.octoprint.org/en/master/bundledplugins/softwareupdate.html
-        # for details.
-        return {
-            "CVPrinting": {
-                "displayName": "Cvprinting Plugin",
-                "displayVersion": self._plugin_version,
+    def get_webcam_links(self):
+        configLocation = self.get_config_location()
+        try:
+            with open(configLocation, "r") as file:
+                config = yaml.safe_load(file)
 
-                # version check: github repository
-                "type": "github_release",
-                "user": "spini",
-                "repo": "OctoPrint-Cvprinting",
-                "current": self._plugin_version,
+            classicwebcam_config = config.get("plugins", {}).get("classicwebcam", {})
+            snapshot_url = classicwebcam_config.get("snapshot")
+            stream_url = classicwebcam_config.get("stream")
+            return dict(snapshot_url=snapshot_url, stream_url=stream_url)
+        except FileNotFoundError:
+            self._logger.error(f"Config file not found at {configLocation}")
+            return dict(snapshot_url="", stream_url="")
+        except yaml.YAMLError as e:
+            self._logger.error(f"Error parsing config file: {e}")
+            return dict(snapshot_url="", stream_url="")
 
-                # update method: pip
-                "pip": "https://github.com/spini/OctoPrint-Cvprinting/archive/{target_version}.zip",
-            }
-        }
-
-
-# If you want your plugin to be registered within OctoPrint under a different name than what you defined in setup.py
-# ("OctoPrint-PluginSkeleton"), you may define that here. Same goes for the other metadata derived from setup.py that
-# can be overwritten via __plugin_xyz__ control properties. See the documentation for that.
-__plugin_name__ = "Cvprinting Plugin"
+    
+    def get_config_location(self):
+        return Path(self.get_plugin_data_folder()).parent.parent.joinpath("config.yaml")
 
 
-# Set the Python version your plugin is compatible with below. Recommended is Python 3 only for all new plugins.
-# OctoPrint 1.4.0 - 1.7.x run under both Python 3 and the end-of-life Python 2.
-# OctoPrint 1.8.0 onwards only supports Python 3.
-__plugin_pythoncompat__ = ">=3,<4"  # Only Python 3
 
-def __plugin_load__():
-    global __plugin_implementation__
-    __plugin_implementation__ = CvprintingPlugin()
 
-    global __plugin_hooks__
-    __plugin_hooks__ = {
-        "octoprint.plugin.softwareupdate.check_config": __plugin_implementation__.get_update_information
-    }
+__plugin_name__ = "CVPrinting"
+__plugin_pythoncompat__ = ">=3.7,<4"
+__plugin_implementation__ = CVPluginInit()
