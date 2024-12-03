@@ -1,22 +1,28 @@
+<div id="cvprinting_settings">
 <div class="WebcamePreview">
     <label class="webcamPreviewLabel">Webcam preview</label>
-    <img src="{{ plugin_CVPrinting_snapshotUrl }}" alt="Webcam preview" style="width:80%;height:80%;">
+    <img data-bind="attr: {src: snapshotUrl}" alt="Webcam preview" style="max-width: 100%; max-height: 80vh; width: auto; height: auto; border: 1px solid #ccc; border-radius: 8px;">
 </div>
 
 <label class="settingsLabel">Settings</label>
 <form class="form-horizontal">
     <class="control-group">
-        <label class="control-laabel">Pause print when issue is detected</label>
         <div class="controls">
-            <input type="checkbox" id="pause_on_issue" data-bind="checked: settings.plugins.CVPrinting.pausePrintOnIssue">
-        </div>
-        <label class="control-laabel">At what level of confidence should print get paused?</label>
-        <div class="controls">
-            <input type="range" id="confidence_level" data-bind="value: settings.plugins.CVPrinting.pauseTreshold">
-        </div>
-        <label class="control-laabel">At what level do you want to receive a  warning?</label>
-        <div class="controls">
-            <input type="range" id="warning_level" data-bind="value: settings.plugins.CVPrinting.warningTreshold">
+        <label class="PauseIssueSettingsLabel">Pause print when issue is detected</label>
+        <input type="checkbox" id="pause_on_issue" data-bind="checked: pauseOnError">
+
+        <label class="ConfidenceLevelSettingsLabel">At what level of confidence should print get paused?</label>
+        <input type="range" id="confidence_level" data-bind="value: pauseThreshold">
+
+        <label class="WarningLevelSettingsLabel">At what level do you want to receive a  warning?</label>
+        <input type="range" id="warning_level" data-bind="value: warningThreshold">
+
+        <label class="SnapshotUrlSettingsLabel">Snapshot URL</label>
+        <input type="text" id="snapshot_url" data-bind="value: snapshotUrl">
+
+        <label class="StreamUrlSettingsLabel">Stream URL</label>
+        <input type="text" id="stream_url" data-bind="value: streamUrl">
         </div>
     </class>
 </form>
+</div>

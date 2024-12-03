@@ -8,31 +8,20 @@ import yaml
 class CVPluginInit(octoprint.plugin.StartupPlugin,
                        octoprint.plugin.SettingsPlugin,
                        octoprint.plugin.TemplatePlugin,
-                       octoprint.plugin.WebcamProviderPlugin):
+                       octoprint.plugin.WebcamProviderPlugin,
+                       octoprint.plugin.AssetPlugin):
     def on_after_startup(self):
         # Print all the current settings
         self._logger.info("CVPrinting plugin started!")
-        self._logger.info("Current settings: PausePrint: %s  PauseTreshold %s  WarningTeshold %s" % (self._settings.get(["pausePrintOnIssue"]), self._settings.get(["pauseTreshold"]), self._settings.get(["warningTreshold"])))
+        self._logger.info("Current settings: PausePrint: %s  PauseTreshold %s  WarningTeshold %s  snapshotUrl %s streamUrl %s snapshotManual %s streamManual %s" % (self._settings.get(["pausePrintOnIssue"]), self._settings.get(["pauseTreshold"]), self._settings.get(["warningTreshold"]), self._settings.get(["snapshot_url"]), self._settings.get(["stream_url"]), self._settings.get(["snapshotUrlSetManually"]), self._settings.get(["streamUrlSetManually"])))
         webcam = self.get_webcam_configurations()
-        self._logger.info("Webcam snapshot url: %s" % webcam[0].compat.snapshot)
-        self._logger.info("Webcam stream url: %s" % webcam[0].compat.stream)
-        self._settings.set(["snapshot_url"], webcam[0].compat.snapshot)
-        self._settings.set(["stream_url"], webcam[0].compat.stream)
-        self._logger.info("Settings snapshot url: %s" % self._settings.get(["snapshot_url"]))
-        self._logger.info("Settings stream url: %s" % self._settings.get(["stream_url"]))
+        if(self._settings.get(["snapshotUrlSetManually"]) == False):
+            self._settings.set(["snapshot_url"], webcam[0].compat.snapshot)
+        if(self._settings.get(["streamUrlSetManually"]) == False):
+            self._settings.set(["stream_url"], webcam[0].compat.stream)
+    
     def get_settings_defaults(self):
-        return dict(pausePrintOnIssue=False, pauseTreshold=0.8, warningTreshold=0.5, snapshot_url="", stream_url="")
-    
-    def get_template_vars(self):
-        return dict(pausePrintOnIssue=self._settings.get(["pausePrintOnIssue"]), pauseTreshold=self._settings.get(["pauseTreshold"]), warningTreshold=self._settings.get(["warningTreshold"]), snapshotUrl=self._settings.get(["snapshot_url"]), streamUrl=self._settings.get(["stream_url"]))
-
-    def get_template_configs(self):
-        return [dict(type="settings", custom_bindings=False)]
-    
-    def get_assets(self):
-        return dict(
-            js=["js/cvprinting_settings.js"]
-        )
+        return dict(pausePrintOnIssue=False, pauseTreshold=0.8, warningTreshold=0.5, snapshot_url="", stream_url="", snapshotUrlSetManually=False, streamUrlSetManually=False)
 
     def get_webcam_configurations(self):
         urls = self.get_webcam_links()
@@ -53,7 +42,6 @@ class CVPluginInit(octoprint.plugin.StartupPlugin,
         try:
             with open(configLocation, "r") as file:
                 config = yaml.safe_load(file)
-
             classicwebcam_config = config.get("plugins", {}).get("classicwebcam", {})
             snapshot_url = classicwebcam_config.get("snapshot")
             stream_url = classicwebcam_config.get("stream")
@@ -69,8 +57,10 @@ class CVPluginInit(octoprint.plugin.StartupPlugin,
     def get_config_location(self):
         return Path(self.get_plugin_data_folder()).parent.parent.joinpath("config.yaml")
 
-
-
+    def get_assets(self):
+        return dict(
+            js=["js/cvprinting_settings.js"],
+        )
 
 __plugin_name__ = "CVPrinting"
 __plugin_pythoncompat__ = ">=3.7,<4"
