@@ -1,19 +1,28 @@
 import os
 import time
+import threading
 import octoprint.plugin
 from pathlib import Path
 from octoprint.schema.webcam import Webcam, WebcamCompatibility
 import yaml
+import requests
+from . import visionModule
 
 class CVPluginInit(octoprint.plugin.StartupPlugin,
                        octoprint.plugin.SettingsPlugin,
                        octoprint.plugin.TemplatePlugin,
                        octoprint.plugin.WebcamProviderPlugin,
-                       octoprint.plugin.AssetPlugin):
+                       octoprint.plugin.AssetPlugin,
+                       octoprint.plugin.EventHandlerPlugin):
     def on_after_startup(self):
         # Print all the current settings
+        self._running = False
+        self._thread = None
         self._logger.info("CVPrinting plugin started!")
-        self._logger.info("Current settings: PausePrint: %s  PauseTreshold %s  WarningTeshold %s  snapshotUrl %s streamUrl %s snapshotManual %s streamManual %s" % (self._settings.get(["pausePrintOnIssue"]), self._settings.get(["pauseTreshold"]), self._settings.get(["warningTreshold"]), self._settings.get(["snapshot_url"]), self._settings.get(["stream_url"]), self._settings.get(["snapshotUrlSetManually"]), self._settings.get(["streamUrlSetManually"])))
+        #self._logger.info("Current settings: PausePrint: %s  PauseTreshold %s  WarningTeshold %s  snapshotUrl %s streamUrl %s snapshotManual %s streamManual %s" % (self._settings.get(["pausePrintOnIssue"]), self._settings.get(["pauseTreshold"]), self._settings.get(["warningTreshold"]), self._settings.get(["snapshot_url"]), self._settings.get(["stream_url"]), self._settings.get(["snapshotUrlSetManually"]), self._settings.get(["streamUrlSetManually"])))
+        self._logger.info(self.get_plugin_data_folder())
+        self._logger.info(self._data_folder)
+        self._logger.info(self._basefolder)
         webcam = self.get_webcam_configurations()
         if(self._settings.get(["snapshotUrlSetManually"]) == False):
             self._settings.set(["snapshot_url"], webcam[0].compat.snapshot)
@@ -21,7 +30,7 @@ class CVPluginInit(octoprint.plugin.StartupPlugin,
             self._settings.set(["stream_url"], webcam[0].compat.stream)
     
     def get_settings_defaults(self):
-        return dict(pausePrintOnIssue=False, pauseTreshold=0.8, warningTreshold=0.5, snapshot_url="", stream_url="", snapshotUrlSetManually=False, streamUrlSetManually=False)
+        return dict(pausePrintOnIssue=False, pauseTreshold=80, warningTreshold=50, snapshot_url="", stream_url="", snapshotUrlSetManually=False, streamUrlSetManually=False, discordNotifications=False)
 
     def get_webcam_configurations(self):
         urls = self.get_webcam_links()
@@ -36,6 +45,16 @@ class CVPluginInit(octoprint.plugin.StartupPlugin,
                 ),
             )
         ]
+    
+    def get_template_configs(self):
+        return [
+            dict(type="settings", custom_bindings=True, template="cvprinting_settings.jinja2"),
+        ]
+
+    def get_assets(self):
+        return dict(
+            js=["js/cvprinting_settings.js"],
+        )
 
     def get_webcam_links(self):
         configLocation = self.get_config_location()
@@ -56,11 +75,67 @@ class CVPluginInit(octoprint.plugin.StartupPlugin,
     
     def get_config_location(self):
         return Path(self.get_plugin_data_folder()).parent.parent.joinpath("config.yaml")
+    
+    def start_monitoring(self):
+        if self._running:
+            return
+        self._running = True
+        self._thread = threading.Thread(target=self.monitor)
+        self._thread.start()
+    
+    def monitor(self):
+        while self._running:
+            result = visionModule.CheckImage(self._settings.get(["snapshot_url"]), self._basefolder)
+            #Print pauseTreshold and warningTreshold
+            self._logger.info(f"PauseTreshold: {self._settings.get(['pauseTreshold'])} WarningTreshold: {self._settings.get(['warningTreshold'])}")
+            for r in result:
+                 # Get the confidence and class index
+                confidences = r.boxes.conf  # Tensor of shape (num_boxes,)
+                class_ids = r.boxes.cls     # Tensor of shape (num_boxes,)
 
-    def get_assets(self):
-        return dict(
-            js=["js/cvprinting_settings.js"],
-        )
+                # Iterate through detected boxes
+                for conf, cls in zip(confidences, class_ids):
+                    # Convert class index to label 0 prints ok, 1 prints not ok
+                    conf = conf*100
+                    label = r.names[int(cls)]
+
+                    # If the label is 'PrintNotOk' and confidence exceeds threshold
+                    self._logger.info(f"Confidence: {conf} {label}")
+                    if conf > self._settings.get(["pauseTreshold"]) and label == "PrintNotOk":
+                        self._logger.info("Pausing print due to high confidence")
+                        self._printer.pause_print()
+                        break
+                    elif conf > self._settings.get(["warningTreshold"]) and label == "PrintNotOk":
+                        self._logger.info("High confidence detected for PrintNotOk")
+            time.sleep(5)
+
+    def stop_monitoring(self):
+        if not self._running:
+            return
+        self._running = False
+        if self._thread:
+            self._thread.join()
+            self._thread = None
+    
+    def on_event(self,event, payload):
+        if event == "PrintStarted":
+            self._logger.info("Print started")
+            self.start_monitoring()
+        if event == "PrintFailed":
+            self._logger.info("Print failed")
+            self.stop_monitoring()
+        if event == "PrintDone":
+            self._logger.info("Print done")
+            self.stop_monitoring()
+        if event == "PrintPaused":
+            self._logger.info("Print paused")
+            self.stop_monitoring()
+        if event == "PrintResumed":
+            self._logger.info("Print resumed")
+            self.start_monitoring()
+        if event == "PrintCancelled":
+            self._logger.info("Print cancelled")
+            self.stop_monitoring()
 
 __plugin_name__ = "CVPrinting"
 __plugin_pythoncompat__ = ">=3.7,<4"
