@@ -14,13 +14,25 @@ $(function(){
         self.onBeforeBinding = function() {
             console.log("onBeforeBinding");
             console.log(self.settings.settings.plugins.CVPrinting);
-            self.warningThreshold(self.settings.settings.plugins.CVPrinting.warningTreshold());
-            self.pauseThreshold(self.settings.settings.plugins.CVPrinting.pauseTreshold());
+            self.warningThreshold(self.settings.settings.plugins.CVPrinting.warningThreshold());
+            self.pauseThreshold(self.settings.settings.plugins.CVPrinting.pauseThreshold());
             self.pauseOnError(self.settings.settings.plugins.CVPrinting.pausePrintOnIssue());
             self.snapshotUrl(self.settings.settings.plugins.CVPrinting.snapshot_url());
             self.streamUrl(self.settings.settings.plugins.CVPrinting.stream_url());
-            self.snapshotUrlSetManually(self.settings.settings.plugins.CVPrinting.snapshotUrlSetManually());
-            self.streamUrlSetManually(self.settings.settings.plugins.CVPrinting.streamUrlSetManually());
+        };
+
+        self.onSettingsBeforeSave = function() {
+            self.settings.settings.plugins.CVPrinting.warningThreshold(self.warningThreshold());
+            self.settings.settings.plugins.CVPrinting.pauseThreshold(self.pauseThreshold());
+            self.settings.settings.plugins.CVPrinting.pausePrintOnIssue(self.pauseOnError());
+            if (self.snapshotUrl() !== self.settings.settings.plugins.CVPrinting.snapshot_url()) {
+                self.settings.settings.plugins.CVPrinting.snapshot_url(self.snapshotUrl());
+                self.settings.settings.plugins.CVPrinting.snapshot_url_set_manually(true);
+            }
+            if (self.streamUrl() !== self.settings.settings.plugins.CVPrinting.stream_url()) {
+                self.settings.settings.plugins.CVPrinting.stream_url(self.streamUrl());
+                self.settings.settings.plugins.CVPrinting.stream_url_set_manually(true);
+            }
         };
     }
 

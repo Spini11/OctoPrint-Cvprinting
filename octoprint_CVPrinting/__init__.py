@@ -19,7 +19,7 @@ class CVPluginInit(octoprint.plugin.StartupPlugin,
         self._running = False
         self._thread = None
         self._logger.info("CVPrinting plugin started!")
-        #self._logger.info("Current settings: PausePrint: %s  PauseTreshold %s  WarningTeshold %s  snapshotUrl %s streamUrl %s snapshotManual %s streamManual %s" % (self._settings.get(["pausePrintOnIssue"]), self._settings.get(["pauseTreshold"]), self._settings.get(["warningTreshold"]), self._settings.get(["snapshot_url"]), self._settings.get(["stream_url"]), self._settings.get(["snapshotUrlSetManually"]), self._settings.get(["streamUrlSetManually"])))
+        #self._logger.info("Current settings: PausePrint: %s  PauseThreshold %s  WarningTeshold %s  snapshotUrl %s streamUrl %s snapshotManual %s streamManual %s" % (self._settings.get(["pausePrintOnIssue"]), self._settings.get(["pauseThreshold"]), self._settings.get(["warningThreshold"]), self._settings.get(["snapshot_url"]), self._settings.get(["stream_url"]), self._settings.get(["snapshotUrlSetManually"]), self._settings.get(["streamUrlSetManually"])))
         self._logger.info(self.get_plugin_data_folder())
         self._logger.info(self._data_folder)
         self._logger.info(self._basefolder)
@@ -30,7 +30,7 @@ class CVPluginInit(octoprint.plugin.StartupPlugin,
             self._settings.set(["stream_url"], webcam[0].compat.stream)
     
     def get_settings_defaults(self):
-        return dict(pausePrintOnIssue=False, pauseTreshold=80, warningTreshold=50, snapshot_url="", stream_url="", snapshotUrlSetManually=False, streamUrlSetManually=False, discordNotifications=False)
+        return dict(pausePrintOnIssue=False, pauseThreshold=80, warningThreshold=50, snapshot_url="", stream_url="", snapshotUrlSetManually=False, streamUrlSetManually=False, discordNotifications=False)
 
     def get_webcam_configurations(self):
         urls = self.get_webcam_links()
@@ -86,26 +86,25 @@ class CVPluginInit(octoprint.plugin.StartupPlugin,
     def monitor(self):
         while self._running:
             result = visionModule.CheckImage(self._settings.get(["snapshot_url"]), self._basefolder)
-            #Print pauseTreshold and warningTreshold
-            self._logger.info(f"PauseTreshold: {self._settings.get(['pauseTreshold'])} WarningTreshold: {self._settings.get(['warningTreshold'])}")
+            #Print pauseThreshold and warningThreshold
+            self._logger.info(f"PauseThreshold: {self._settings.get(['pauseThreshold'])} WarningThreshold: {self._settings.get(['warningThreshold'])}")
             for r in result:
                  # Get the confidence and class index
-                confidences = r.boxes.conf  # Tensor of shape (num_boxes,)
-                class_ids = r.boxes.cls     # Tensor of shape (num_boxes,)
+                confidences = r.boxes.conf
+                class_ids = r.boxes.cls 
 
                 # Iterate through detected boxes
                 for conf, cls in zip(confidences, class_ids):
-                    # Convert class index to label 0 prints ok, 1 prints not ok
+                    #Convert confidence to percentage 
                     conf = conf*100
                     label = r.names[int(cls)]
 
-                    # If the label is 'PrintNotOk' and confidence exceeds threshold
                     self._logger.info(f"Confidence: {conf} {label}")
-                    if conf > self._settings.get(["pauseTreshold"]) and label == "PrintNotOk":
+                    if conf > float(self._settings.get(["pauseThreshold"])) and label == "PrintNotOk" and float(self._settings.get(["pausePrintOnIssue"])):
                         self._logger.info("Pausing print due to high confidence")
                         self._printer.pause_print()
                         break
-                    elif conf > self._settings.get(["warningTreshold"]) and label == "PrintNotOk":
+                    elif conf > float(self._settings.get(["warningThreshold"])) and label == "PrintNotOk":
                         self._logger.info("High confidence detected for PrintNotOk")
             time.sleep(5)
 
