@@ -61,5 +61,24 @@
                 style="flex: 2; max-width: 300px; padding: 5px; border: 1px solid #ccc; border-radius: 4px;" 
                 data-bind="value: streamUrl">
         </div>
+
+        <label class="notificationsLabel" style="font-weight: bold; font-size: 1.1em; display: block; margin-top: 20px;">Notifications</label>
+        <div class="control-group" style="display: flex; align-items: center; gap: 10px;">
+            <input 
+                type="checkbox" 
+                id="discord_enabled" 
+                data-bind="checked: discordEnabled, enable: webhookUrl()" 
+                style="margin-right: 10px;">
+            <label for="discord_enabled" class="DiscordEnabledLabel">Enable Discord Notifications</label>
+        </div>
+
+        <div class="control-group" style="display: flex; align-items: center; gap: 10px;">
+            <label for="WebhookUrl" class="WebhookUrlSettingsLabel" style="flex: 1;">Webhook URL</label>
+            <input 
+                type="text" 
+                id="WebhookUrl" 
+                style="flex: 2; max-width: 300px; padding: 5px; border: 1px solid #ccc; border-radius: 4px;" 
+                data-bind="value: webhookUrl">
+        </div>
     </form>
 </div>

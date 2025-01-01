@@ -10,6 +10,8 @@ $(function(){
         self.streamUrl = ko.observable();
         self.snapshotUrlSetManually = ko.observable();
         self.streamUrlSetManually = ko.observable();
+        self.webhookUrl = ko.observable();
+        self.discordEnabled = ko.observable();
 
         self.onBeforeBinding = function() {
             console.log("onBeforeBinding");
@@ -19,12 +21,16 @@ $(function(){
             self.pauseOnError(self.settings.settings.plugins.CVPrinting.pausePrintOnIssue());
             self.snapshotUrl(self.settings.settings.plugins.CVPrinting.snapshot_url());
             self.streamUrl(self.settings.settings.plugins.CVPrinting.stream_url());
+            self.webhookUrl(self.settings.settings.plugins.CVPrinting.discordWebhookUrl());
+            self.discordEnabled(self.settings.settings.plugins.CVPrinting.discordNotifications());
         };
 
         self.onSettingsBeforeSave = function() {
             self.settings.settings.plugins.CVPrinting.warningThreshold(self.warningThreshold());
             self.settings.settings.plugins.CVPrinting.pauseThreshold(self.pauseThreshold());
             self.settings.settings.plugins.CVPrinting.pausePrintOnIssue(self.pauseOnError());
+            self.settings.settings.plugins.CVPrinting.discordWebhookUrl(self.webhookUrl());
+            self.settings.settings.plugins.CVPrinting.discordNotifications(self.discordEnabled());
             if (self.snapshotUrl() !== self.settings.settings.plugins.CVPrinting.snapshot_url()) {
                 self.settings.settings.plugins.CVPrinting.snapshot_url(self.snapshotUrl());
                 self.settings.settings.plugins.CVPrinting.snapshot_url_set_manually(true);

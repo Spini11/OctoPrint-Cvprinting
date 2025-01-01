@@ -7,6 +7,7 @@ from octoprint.schema.webcam import Webcam, WebcamCompatibility
 import yaml
 import requests
 from . import visionModule
+from . import notifications
 
 class CVPluginInit(octoprint.plugin.StartupPlugin,
                        octoprint.plugin.SettingsPlugin,
@@ -14,6 +15,7 @@ class CVPluginInit(octoprint.plugin.StartupPlugin,
                        octoprint.plugin.WebcamProviderPlugin,
                        octoprint.plugin.AssetPlugin,
                        octoprint.plugin.EventHandlerPlugin):
+    notificationsModule = None
     def on_after_startup(self):
         # Print all the current settings
         self._running = False
@@ -28,9 +30,13 @@ class CVPluginInit(octoprint.plugin.StartupPlugin,
             self._settings.set(["snapshot_url"], webcam[0].compat.snapshot)
         if(self._settings.get(["streamUrlSetManually"]) == False):
             self._settings.set(["stream_url"], webcam[0].compat.stream)
-    
+        self.notificationsModule = notifications.NotificationsCVPrinting(self._settings.get(["discordNotifications"]),self._settings.get(["discordWebhookUrl"]))
+        print("type of settings")
+        print(type(self._settings))
+
+
     def get_settings_defaults(self):
-        return dict(pausePrintOnIssue=False, pauseThreshold=80, warningThreshold=50, snapshot_url="", stream_url="", snapshotUrlSetManually=False, streamUrlSetManually=False, discordNotifications=False)
+        return dict(pausePrintOnIssue=False, pauseThreshold=80, warningThreshold=50, snapshot_url="", stream_url="", snapshotUrlSetManually=False, streamUrlSetManually=False, discordNotifications=False, discordWebhookUrl="")
 
     def get_webcam_configurations(self):
         urls = self.get_webcam_links()
@@ -85,7 +91,7 @@ class CVPluginInit(octoprint.plugin.StartupPlugin,
     
     def monitor(self):
         while self._running:
-            result = visionModule.CheckImage(self._settings.get(["snapshot_url"]), self._basefolder)
+            image, result = visionModule.CheckImage(self._settings.get(["snapshot_url"]), self._basefolder)
             #Print pauseThreshold and warningThreshold
             self._logger.info(f"PauseThreshold: {self._settings.get(['pauseThreshold'])} WarningThreshold: {self._settings.get(['warningThreshold'])}")
             for r in result:
@@ -102,10 +108,13 @@ class CVPluginInit(octoprint.plugin.StartupPlugin,
                     self._logger.info(f"Confidence: {conf} {label}")
                     if conf > float(self._settings.get(["pauseThreshold"])) and label == "PrintNotOk" and float(self._settings.get(["pausePrintOnIssue"])):
                         self._logger.info("Pausing print due to high confidence")
+                        self.notificationsModule.notify("Error", {"message": "Possible issue detected", "image": image})
                         self._printer.pause_print()
                         break
                     elif conf > float(self._settings.get(["warningThreshold"])) and label == "PrintNotOk":
                         self._logger.info("High confidence detected for PrintNotOk")
+                        self.notificationsModule.notify("Warning", {"message": "Possible issue detected", "image": image})
+            os.remove(image)
             time.sleep(5)
 
     def stop_monitoring(self):
@@ -115,6 +124,26 @@ class CVPluginInit(octoprint.plugin.StartupPlugin,
         if self._thread:
             self._thread.join()
             self._thread = None
+
+    def on_settings_save(self, data):
+        self._logger.info(data)
+        if "discordWebhookUrl" in data.keys():
+            self._logger.info("Discord webhook URL updated")
+            self.notificationsModule.discordSettings["webhookUrl"] = data["discordWebhookUrl"]
+        if "discordNotifications" in data.keys():
+            if data["discordNotifications"]:
+                if not self.notificationsModule.discordSettings.get("webhookUrl"):
+                    self._logger.info("Discord webhook URL not set")
+                else:
+                    self._logger.info("Discord notifications enabled")
+                    self.notificationsModule.destinations.append("discord")
+            else:
+                self._logger.info("Discord notifications disabled")
+                self.notificationsModule.destinations.remove("discord")
+        #Save the data
+        for key, value in data.items():
+            self._settings.set([key], value)
+        return data
     
     def on_event(self,event, payload):
         if event == "PrintStarted":
@@ -135,6 +164,8 @@ class CVPluginInit(octoprint.plugin.StartupPlugin,
         if event == "PrintCancelled":
             self._logger.info("Print cancelled")
             self.stop_monitoring()
+        if event == "SettingsUpdated":
+            self._logger.info("Settings updated")
 
 __plugin_name__ = "CVPrinting"
 __plugin_pythoncompat__ = ">=3.7,<4"
