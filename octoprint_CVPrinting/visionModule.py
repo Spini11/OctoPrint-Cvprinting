@@ -4,8 +4,11 @@ from ultralytics import YOLO
 import uuid
 
 def CheckImage(image, folder):
-    model = YOLO(os.path.join(folder, 'data/best.pt'))
-    imageLocation = os.path.join(folder,f'{str(uuid.uuid4())}.png')
+    print(folder)
+    model = YOLO(os.path.join(folder, 'best.pt'))
+    print(folder)
+    imageLocation = os.path.join(folder,f'images/{str(uuid.uuid4())}.png')
+    print(imageLocation)
     response = requests.get(image)
     if response.status_code == 200:
         with open(imageLocation, 'wb') as f:
@@ -13,5 +16,5 @@ def CheckImage(image, folder):
     else:
         return "Failed to download image"
     
-    result= model(imageLocation)
-    return imageLocation, result
+    results= model(imageLocation)
+    return imageLocation, results
