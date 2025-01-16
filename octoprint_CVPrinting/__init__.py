@@ -1,6 +1,8 @@
 import os
 import time
 import threading
+
+from flask import jsonify
 import octoprint.plugin
 from pathlib import Path
 from octoprint.schema.webcam import Webcam, WebcamCompatibility
@@ -14,7 +16,8 @@ class CVPluginInit(octoprint.plugin.StartupPlugin,
                        octoprint.plugin.TemplatePlugin,
                        octoprint.plugin.WebcamProviderPlugin,
                        octoprint.plugin.AssetPlugin,
-                       octoprint.plugin.EventHandlerPlugin):
+                       octoprint.plugin.EventHandlerPlugin,
+                       octoprint.plugin.BlueprintPlugin):
     _notificationsModule = None
     _lastDetection = 0
     _lastPause = 0
@@ -22,6 +25,7 @@ class CVPluginInit(octoprint.plugin.StartupPlugin,
     _thread = None
     _currentJob = None
     _pausedOnError = False
+    _currentDetection = 0
 
 
     def on_after_startup(self):
@@ -58,11 +62,19 @@ class CVPluginInit(octoprint.plugin.StartupPlugin,
     def get_template_configs(self):
         return [
             dict(type="settings", custom_bindings=True, template="cvprinting_settings.jinja2"),
+            dict(type="sidebar", custom_bindings=True, template="cvprinting_sidebar.jinja2"),
         ]
+    
+    @octoprint.plugin.BlueprintPlugin.route("/get_variable", methods=["GET"])
+    def get_variable(self):
+        return jsonify({"variable": self._currentDetection})
+    
+    def get_template_vars(self):
+        return dict(currentDetection=self._currentDetection)
 
     def get_assets(self):
         return dict(
-            js=["js/cvprinting_settings.js"],
+            js=["js/cvprinting_settings.js", "js/cvprinting_sidebar.js"],
         )
 
     def get_webcam_links(self):
@@ -86,6 +98,10 @@ class CVPluginInit(octoprint.plugin.StartupPlugin,
         return Path(self.get_plugin_data_folder()).parent.parent.joinpath("config.yaml")
     
     def start_monitoring(self):
+        for filename in os.listdir(os.path.join(self._basefolder, 'data/images/')):
+            file_path = os.path.join(os.path.join(self._basefolder, 'data/images/'), filename)
+            if os.path.isfile(file_path):
+                os.remove(file_path)
         if self._running:
             return
         self._running = True
@@ -96,44 +112,52 @@ class CVPluginInit(octoprint.plugin.StartupPlugin,
         while self._running:
             #Call vision module to check the image for printing errors
             image, result = visionModule.CheckImage(self._settings.get(["snapshot_url"]), os.path.join(self._basefolder, 'data'))
-
-            for r in result:
-                confidences = r.boxes.conf
-                class_ids = r.boxes.cls 
-
-                # Iterate through detected boxes
-                for conf, cls in zip(confidences, class_ids):
-                    label = r.names[int(cls)]
-                    if label == "PrintOk":
-                        continue
+            if result == 1:
+                self._logger.error("Error downloading image")
+                time.sleep(5)
+                continue
+            elif result == 2:
+                self._logger.error("Error processing image")
+                time.sleep(5)
+                continue
                     #Convert confidence to percentage 
-                    conf = conf*100
-                    #If the confidence is above the pause threshold, send a notification, pause the print 
-                    if conf > float(self._settings.get(["pauseThreshold"])) and float(self._settings.get(["pausePrintOnIssue"])):
-                        #If the last pause was more than 10 minutes ago, send a notification and pause the print
-                        if((self._lastPause + 10*60) < time.time()):
-                            self._lastPause = time.time()
-                            self._notificationsModule.notify("Error", {"message": "Possible issue detected", "image": image})
-                            self._pausedOnError = True
-                            self._printer.pause_print()
-                            break
-                        #If the last pause was less than 10 minutes ago, update the last pause time to prevent repeated pause on false positives
-                        else:
-                            self._lastPause = time.time()
-                    #If the confidence is above the warning threshold, send a notification
-                    elif conf > float(self._settings.get(["warningThreshold"])):
-                        #If the last detection was more than 5 minutes ago, send a notification
-                        if((self._lastDetection + 5*60) < time.time()):
-                            self._lastDetection = time.time()
-                            self._notificationsModule.notify("Warning", {"message": "Possible issue detected", "image": image})
-                        #If the last detection was less than 5 minutes ago, update the last detection time to prevent repeated notifications
-                        else:
-                            self._lastDetection = time.time()
+            if not result:
+                self._currentDetection = 0
+                time.sleep(5)
+                continue
+            conf = result.get("conf") * 100
+            self._currentDetection = conf
+            print(self._currentDetection)
+            #If the confidence is above the pause threshold, send a notification, pause the print 
+            if conf > float(self._settings.get(["pauseThreshold"])) and float(self._settings.get(["pausePrintOnIssue"])):
+                #If the last pause was more than 10 minutes ago, send a notification and pause the print
+                if((self._lastPause + 10*60) < time.time()):
+                    self._lastPause = time.time()
+                    self._notificationsModule.notify("Error", {"message": "Possible issue detected", "image": image})
+                    self._pausedOnError = True
+                    self._printer.pause_print()
+                    break
+                #If the last pause was less than 10 minutes ago, update the last pause time to prevent repeated pause on false positives
+                else:
+                    self._lastPause = time.time()
+            #If the confidence is above the warning threshold, send a notification
+            elif conf > float(self._settings.get(["warningThreshold"])):
+                #If the last detection was more than 5 minutes ago, send a notification
+                if((self._lastDetection + 5*60) < time.time()):
+                    self._lastDetection = time.time()
+                    self._notificationsModule.notify("Warning", {"message": "Possible issue detected", "image": image})
+                #If the last detection was less than 5 minutes ago, update the last detection time to prevent repeated notifications
+                else:
+                    self._lastDetection = time.time()
             #Delete the image after processing and wait for 5 seconds before checking the next image
             os.remove(image)
             time.sleep(5)
 
     def stop_monitoring(self):
+        for filename in os.listdir(os.path.join(self._basefolder, 'data/images/')):
+            file_path = os.path.join(os.path.join(self._basefolder, 'data/images/'), filename)
+            if os.path.isfile(file_path):
+                os.remove(file_path)
         if not self._running:
             return
         self._running = False
@@ -168,9 +192,16 @@ class CVPluginInit(octoprint.plugin.StartupPlugin,
             self._logger.info("Print started")
             self.start_monitoring()
         #If the print is done, failed, paused or cancelled, stop monitoring
-        if event == "PrintFailed" or event == "PrintDone" or event == "PrintPaused" or event == "PrintCancelled":
+        if event == "PrintPaused":
             self._logger.info("Stopping monitoring")
             self.stop_monitoring()
+        if event == "PrintFailed" or event == "PrintDone" or event == "PrintCancelled":
+            self._logger.info("Stopping monitoring")
+            self.stop_monitoring()
+            self._pausedOnError = False
+            self._lastDetection = 0
+            self._lastPause = 0
+
         #If the print is resumed, start monitoring
         if event == "PrintResumed":
             self._logger.info("Print resumed")

@@ -14,8 +14,6 @@ $(function(){
         self.discordEnabled = ko.observable();
 
         self.onBeforeBinding = function() {
-            console.log("onBeforeBinding");
-            console.log(self.settings.settings.plugins.CVPrinting);
             self.warningThreshold(self.settings.settings.plugins.CVPrinting.warningThreshold());
             self.pauseThreshold(self.settings.settings.plugins.CVPrinting.pauseThreshold());
             self.pauseOnError(self.settings.settings.plugins.CVPrinting.pausePrintOnIssue());
