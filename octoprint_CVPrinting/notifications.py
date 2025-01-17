@@ -1,6 +1,6 @@
 from discordwebhook import Discord
 
-class NotificationsCVPrinting:
+class Notificationscvprinting:
     destinations = []
     discordSettings = {}
     folder = ""

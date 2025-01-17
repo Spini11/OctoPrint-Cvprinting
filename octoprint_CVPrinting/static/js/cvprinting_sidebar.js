@@ -54,9 +54,9 @@ $(function(){
         }
 
         self.onBeforeBinding = function() {
-            self.pauseOnError(self.settings.settings.plugins.CVPrinting.pausePrintOnIssue());
-            self.pauseConfidence(self.settings.settings.plugins.CVPrinting.pauseThreshold());
-            self.warningConfidence(self.settings.settings.plugins.CVPrinting.warningThreshold());
+            self.pauseOnError(self.settings.settings.plugins.cvprinting.pausePrintOnIssue());
+            self.pauseConfidence(self.settings.settings.plugins.cvprinting.pauseThreshold());
+            self.warningConfidence(self.settings.settings.plugins.cvprinting.warningThreshold());
         };
 
         self.onAfterBinding = function() {
@@ -65,14 +65,14 @@ $(function(){
         };
 
         self.onSettingsBeforeSave = function() {
-            self.settings.settings.plugins.CVPrinting.pausePrintOnIssue(self.pauseOnError());
-            self.settings.settings.plugins.CVPrinting.pauseThreshold(self.pauseConfidence());
-            self.settings.settings.plugins.CVPrinting.warningThreshold(self.warningConfidence());
+            self.settings.settings.plugins.cvprinting.pausePrintOnIssue(self.pauseOnError());
+            self.settings.settings.plugins.cvprinting.pauseThreshold(self.pauseConfidence());
+            self.settings.settings.plugins.cvprinting.warningThreshold(self.warningConfidence());
         };
 
 
         function getConfidence() {
-            return fetch("/plugin/CVPrinting/get_variable")
+            return fetch("/plugin/cvprinting/get_variable")
                 .then(response => response.json())
                 .then(data => Math.floor(data.variable))
                 .catch(error => {

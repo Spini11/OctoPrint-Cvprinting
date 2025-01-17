@@ -1,5 +1,5 @@
 include README.md
-recursive-include octoprint_CVPrinting/data *
-recursive-include octoprint_CVPrinting/templates *
-recursive-include octoprint_CVPrinting/translations *
-recursive-include octoprint_CVPrinting/static *
+recursive-include octoprint_cvprinting/data *
+recursive-include octoprint_cvprinting/templates *
+recursive-include octoprint_cvprinting/translations *
+recursive-include octoprint_cvprinting/static *

@@ -11,7 +11,7 @@ import requests
 from . import visionModule
 from . import notifications
 
-class CVPluginInit(octoprint.plugin.StartupPlugin,
+class cvpluginInit(octoprint.plugin.StartupPlugin,
                        octoprint.plugin.SettingsPlugin,
                        octoprint.plugin.TemplatePlugin,
                        octoprint.plugin.WebcamProviderPlugin,
@@ -29,15 +29,20 @@ class CVPluginInit(octoprint.plugin.StartupPlugin,
 
 
     def on_after_startup(self):
-        self._logger.info("CVPrinting plugin started!")
+        self._logger.info("cvprinting plugin started!")
         webcam = self.get_webcam_configurations()
+        self._logger.info(webcam[0].compat.snapshot)
         #Unless user has set the snapshot and stream URL manually, use the ones from the classic webcam plugin
+        self._logger.info("Plugin test")
+        self._logger.info(self._settings.get(["snapshotUrlSetManually"]))
         if(self._settings.get(["snapshotUrlSetManually"]) == False):
             self._settings.set(["snapshot_url"], webcam[0].compat.snapshot)
+            self._logger.info("Snapshot URL set")
+            self._logger.info(self._settings.get(["snapshot_url"]))
         if(self._settings.get(["streamUrlSetManually"]) == False):
             self._settings.set(["stream_url"], webcam[0].compat.stream)
         #Initialize the notifications module
-        self._notificationsModule = notifications.NotificationsCVPrinting(self._settings.get(["discordNotifications"]),self._settings.get(["discordWebhookUrl"]))
+        self._notificationsModule = notifications.Notificationscvprinting(self._settings.get(["discordNotifications"]),self._settings.get(["discordWebhookUrl"]))
         #Create folder for storing images
         os.makedirs(os.path.join(self._basefolder, 'data/images'), exist_ok=True)
 
@@ -49,7 +54,7 @@ class CVPluginInit(octoprint.plugin.StartupPlugin,
         urls = self.get_webcam_links()
         return [
             Webcam(
-                name="CVPrinting",
+                name="cvprinting",
                 displayName="Classic webcam",
                 canSnapshot=True,
                 compat=WebcamCompatibility(
@@ -214,4 +219,4 @@ class CVPluginInit(octoprint.plugin.StartupPlugin,
 
 __plugin_name__ = "CVPrinting"
 __plugin_pythoncompat__ = ">=3.7,<4"
-__plugin_implementation__ = CVPluginInit()
+__plugin_implementation__ = cvpluginInit()
