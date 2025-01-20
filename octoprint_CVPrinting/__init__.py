@@ -72,8 +72,8 @@ class cvpluginInit(octoprint.plugin.StartupPlugin,
         webcamList = self.get_webcam_list()
         return jsonify(webcamList)
     
-    @octoprint.plugin.BlueprintPlugin.route("/get_variable", methods=["GET"])
-    def get_variable(self):
+    @octoprint.plugin.BlueprintPlugin.route("/get_confidence", methods=["POST"])
+    def get_confidence(self):
         return jsonify({"variable": self._currentDetection})
     
     def get_template_vars(self):

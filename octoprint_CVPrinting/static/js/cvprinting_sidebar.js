@@ -72,7 +72,7 @@ $(function(){
 
 
         function getConfidence() {
-            return fetch("/plugin/cvprinting/get_variable")
+            return fetch("/plugin/cvprinting/get_confidence", {method: "POST"})
                 .then(response => response.json())
                 .then(data => Math.floor(data.variable))
                 .catch(error => {
