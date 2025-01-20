@@ -30,7 +30,7 @@ class cvpluginInit(octoprint.plugin.StartupPlugin,
 
 
     def on_after_startup(self):
-
+        self._logger.info("CVPrinting started")
         #Initialize the notifications module
         self._notificationsModule = notifications.Notificationscvprinting(self._settings.get(["discordNotifications"]),self._settings.get(["discordWebhookUrl"]))
         #Create folder for storing images
