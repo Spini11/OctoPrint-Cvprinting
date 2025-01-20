@@ -6,6 +6,7 @@ from flask import jsonify
 import octoprint.plugin
 from pathlib import Path
 from octoprint.schema.webcam import Webcam, WebcamCompatibility
+import octoprint.webcams
 import yaml
 import requests
 from . import visionModule
@@ -29,18 +30,7 @@ class cvpluginInit(octoprint.plugin.StartupPlugin,
 
 
     def on_after_startup(self):
-        self._logger.info("cvprinting plugin started!")
-        webcam = self.get_webcam_configurations()
-        self._logger.info(webcam[0].compat.snapshot)
-        #Unless user has set the snapshot and stream URL manually, use the ones from the classic webcam plugin
-        self._logger.info("Plugin test")
-        self._logger.info(self._settings.get(["snapshotUrlSetManually"]))
-        if(self._settings.get(["snapshotUrlSetManually"]) == False):
-            self._settings.set(["snapshot_url"], webcam[0].compat.snapshot)
-            self._logger.info("Snapshot URL set")
-            self._logger.info(self._settings.get(["snapshot_url"]))
-        if(self._settings.get(["streamUrlSetManually"]) == False):
-            self._settings.set(["stream_url"], webcam[0].compat.stream)
+
         #Initialize the notifications module
         self._notificationsModule = notifications.Notificationscvprinting(self._settings.get(["discordNotifications"]),self._settings.get(["discordWebhookUrl"]))
         #Create folder for storing images
@@ -48,27 +38,39 @@ class cvpluginInit(octoprint.plugin.StartupPlugin,
 
 
     def get_settings_defaults(self):
-        return dict(pausePrintOnIssue=False, pauseThreshold=80, warningThreshold=50, snapshot_url="", stream_url="", snapshotUrlSetManually=False, streamUrlSetManually=False, discordNotifications=False, discordWebhookUrl="")
+        return dict(pausePrintOnIssue=False, pauseThreshold=80, warningThreshold=50, cvprintingSnapshotUrl="", cvprintingStreamUrl="", discordNotifications=False, discordWebhookUrl="", selectedWebcam="classic")
 
-    def get_webcam_configurations(self):
-        urls = self.get_webcam_links()
-        return [
-            Webcam(
-                name="cvprinting",
-                displayName="Classic webcam",
-                canSnapshot=True,
-                compat=WebcamCompatibility(
-                    snapshot=urls.get("snapshot_url"),
-                    stream=urls.get("stream_url"),
-                ),
-            )
-        ]
+    def get_webcam_list(self):
+        webcams = octoprint.webcams.get_webcams()
+        webcamList = []
+        for webcamName, providerContainer in webcams.items():
+            if webcamName == "classic" or webcamName == "cvprinting":
+                webcamList.append({
+                    "name": webcamName,
+                    "streamUrl": providerContainer.config.extras.get("stream", None),
+                    "snapshotUrl": providerContainer.config.snapshotDisplay
+                })
+        return webcamList
+                
+    def get_current_webcam(self):
+        webcamList = self.get_webcam_list()
+        for webcam in webcamList:
+            if webcam["name"] == self._settings.get(["selectedWebcam"]):
+                return webcam
+        if (self._settings.get(["selectedWebcam"]) == "cvprinting"):
+            return {"name": "cvprinting", "streamUrl": self._settings.get(["cvprintingStreamUrl"]), "snapshotUrl": self._settings.get(["cvprintingSnapshotUrl"])}
+        return None
     
     def get_template_configs(self):
         return [
             dict(type="settings", custom_bindings=True, template="cvprinting_settings.jinja2"),
             dict(type="sidebar", custom_bindings=True, template="cvprinting_sidebar.jinja2"),
         ]
+    
+    @octoprint.plugin.BlueprintPlugin.route("/get_webcams", methods=["POST"])
+    def get_webcams(self):
+        webcamList = self.get_webcam_list()
+        return jsonify(webcamList)
     
     @octoprint.plugin.BlueprintPlugin.route("/get_variable", methods=["GET"])
     def get_variable(self):
@@ -81,23 +83,6 @@ class cvpluginInit(octoprint.plugin.StartupPlugin,
         return dict(
             js=["js/cvprinting_settings.js", "js/cvprinting_sidebar.js"],
         )
-
-    def get_webcam_links(self):
-        configLocation = self.get_config_location()
-        try:
-            with open(configLocation, "r") as file:
-                config = yaml.safe_load(file)
-            classicwebcam_config = config.get("plugins", {}).get("classicwebcam", {})
-            snapshot_url = classicwebcam_config.get("snapshot")
-            stream_url = classicwebcam_config.get("stream")
-            return dict(snapshot_url=snapshot_url, stream_url=stream_url)
-        except FileNotFoundError:
-            self._logger.error(f"Config file not found at {configLocation}")
-            return dict(snapshot_url="", stream_url="")
-        except yaml.YAMLError as e:
-            self._logger.error(f"Error parsing config file: {e}")
-            return dict(snapshot_url="", stream_url="")
-
     
     def get_config_location(self):
         return Path(self.get_plugin_data_folder()).parent.parent.joinpath("config.yaml")
@@ -116,7 +101,12 @@ class cvpluginInit(octoprint.plugin.StartupPlugin,
     def monitor(self):
         while self._running:
             #Call vision module to check the image for printing errors
-            image, result = visionModule.CheckImage(self._settings.get(["snapshot_url"]), os.path.join(self._basefolder, 'data'))
+            webcam = self.get_current_webcam()
+            if not webcam:
+                self._logger.error("Webcam not found")
+                time.sleep(5)
+                continue
+            image, result = visionModule.CheckImage(webcam["snapshotUrl"], os.path.join(self._basefolder, 'data'))
             if result == 1:
                 self._logger.error("Error downloading image")
                 time.sleep(5)
@@ -132,7 +122,7 @@ class cvpluginInit(octoprint.plugin.StartupPlugin,
                 continue
             conf = result.get("conf") * 100
             self._currentDetection = conf
-            print(self._currentDetection)
+            self._logger.info(self._currentDetection)
             #If the confidence is above the pause threshold, send a notification, pause the print 
             if conf > float(self._settings.get(["pauseThreshold"])) and float(self._settings.get(["pausePrintOnIssue"])):
                 #If the last pause was more than 10 minutes ago, send a notification and pause the print

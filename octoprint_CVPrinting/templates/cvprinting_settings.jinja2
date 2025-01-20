@@ -1,8 +1,8 @@
 <div id="cvprinting_settings" style="max-width: 800px; margin: 0 auto; font-family: Arial, sans-serif;">
     <div class="WebcamPreview" style="text-align: center; margin-bottom: 20px;">
         <label class="webcamPreviewLabel" style="display: block; margin-bottom: 10px; font-weight: bold;">Webcam Preview</label>
-        <img 
-            data-bind="attr: {src: snapshotUrl}" 
+        <img id="videoStream"
+            data-bind="attr: {src: currentStream}"
             alt="Webcam preview" 
             style="max-width: 90%; max-height: 80vh; width: auto; height: auto; border: 1px solid #ccc; border-radius: 8px;">
     </div>
@@ -15,7 +15,7 @@
         </div>
 
         <div class="control-group">
-            <label for="confidence_level" class="ConfidenceLevelSettingsLabel" style="display: block; margin-bottom: 5px;">At what level of confidence should the print pause?</label>
+            <label for="confidence_level" class="ConfidenceLevelSettingsLabel" style="display: block; margin-bottom: 5px;">Minimal confidence to pause a print? (If pause enabled)</label>
             <div style="display: flex; align-items: center; gap: 10px;">
                 <input 
                     type="range" 
@@ -30,7 +30,7 @@
         </div>
 
         <div class="control-group">
-            <label for="warning_level" class="WarningLevelSettingsLabel" style="display: block; margin-bottom: 5px;">At what level do you want to receive a warning?</label>
+            <label for="warning_level" class="WarningLevelSettingsLabel" style="display: block; margin-bottom: 5px;">Minimal confidence to send a notification?</label>
             <div style="display: flex; align-items: center; gap: 10px;">
                 <input 
                     type="range" 
@@ -45,21 +45,61 @@
         </div>
 
         <div class="control-group" style="display: flex; align-items: center; gap: 10px;">
-            <label for="snapshot_url" class="SnapshotUrlSettingsLabel" style="flex: 1;">Snapshot URL</label>
-            <input 
-                type="text" 
-                id="snapshot_url" 
+            <label for="selectedWebcam" class="WebcamProfileLabel" style="flex: 1;">Choose webcam profile</label>
+            <select 
+                id="selectedWebcam" 
                 style="flex: 2; max-width: 300px; padding: 5px; border: 1px solid #ccc; border-radius: 4px;" 
-                data-bind="value: snapshotUrl">
+                data-bind="value: selectedWebcam">
+                <option value="classic">Classic</option>
+                <option value="cvprinting">Custom</option>
+            </select>
         </div>
+        <div id="cvprintingCam_settings" style="display: none;">
+            <!--Cvprinting snapshot-->
+            <div class="control-group" style="display: flex; align-items: center; gap: 10px;">
+                <label for="cvprintingSnapshotUrl" class="SnapshotUrlSettingsLabel" style="flex: 1;">Snapshot URL</label>
+                <input 
+                    type="text" 
+                    id="cvprintingSnapshotUrl" 
+                    style="flex: 2; max-width: 300px; padding: 5px; border: 1px solid #ccc; border-radius: 4px;" 
+                    data-bind="value: cvprintingSnapshotUrl">
+            </div>
 
-        <div class="control-group" style="display: flex; align-items: center; gap: 10px;">
-            <label for="stream_url" class="StreamUrlSettingsLabel" style="flex: 1;">Stream URL</label>
-            <input 
-                type="text" 
-                id="stream_url" 
-                style="flex: 2; max-width: 300px; padding: 5px; border: 1px solid #ccc; border-radius: 4px;" 
-                data-bind="value: streamUrl">
+            <!--Cvprinting stream-->
+            <div id="cvprinting" class="control-group" style="display: flex; align-items: center; gap: 10px;">
+                <label for="cvprintingStreamUrl" class="StreamUrlSettingsLabel" style="flex: 1;">Stream URL</label>
+                <input 
+                    type="text" 
+                    id="cvprintingStreamUrl" 
+                    style="flex: 2; max-width: 300px; padding: 5px; border: 1px solid #ccc; border-radius: 4px;" 
+                    data-bind="value: cvprintingStreamUrl">
+            </div>
+        </div>
+        
+        <div id="classicCam_settings">
+
+            <!--Classic snapshot-->
+            <div class="control-group" style="display: flex; align-items: center; gap: 10px;">
+                <label for="classicSnapshotUrl" class="SnapshotUrlSettingsLabel" style="flex: 1;">Snapshot URL</label>
+                <input 
+                    type="text" 
+                    id="classicSnapshotUrl" 
+                    readonly 
+                    style="flex: 2; max-width: 300px; padding: 5px; border: 1px solid #ccc; border-radius: 4px;" 
+                    data-bind="value: classicSnapshotUrl">
+            </div>
+
+            <!--Classic stream-->
+            <div class="control-group" style="display: flex; align-items: center; gap: 10px;">
+                <label for="classicStreamUrl" class="StreamUrlSettingsLabel" style="flex: 1;">Stream URL</label>
+                <input 
+                    type="text" 
+                    id="classicStreamUrl" 
+                    readonly 
+                    style="flex: 2; max-width: 300px; padding: 5px; border: 1px solid #ccc; border-radius: 4px;" 
+                    data-bind="value: classicStreamUrl">
+            </div>
+
         </div>
 
         <label class="notificationsLabel" style="font-weight: bold; font-size: 1.1em; display: block; margin-top: 20px;">Notifications</label>
