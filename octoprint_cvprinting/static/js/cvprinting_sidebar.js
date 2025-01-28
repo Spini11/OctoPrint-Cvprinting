@@ -66,12 +66,12 @@ $(function(){
         };
 
         self.onSettingsBeforeSave = function() {
-            if(self.saveData === false)
+            if(self.dataSave === false)
                 return;
             self.settings.settings.plugins.cvprinting.pausePrintOnIssue(self.pauseOnError());
             self.settings.settings.plugins.cvprinting.pauseThreshold(self.pauseConfidence());
             self.settings.settings.plugins.cvprinting.warningThreshold(self.warningConfidence());
-            self.saveData = false;
+            self.dataSave = false;
         };
 
 
@@ -86,17 +86,17 @@ $(function(){
         }
 
         self.pauseOnError.subscribe(function (newValue) {
-            self.saveData = true;
+            self.dataSave = true;
             self.settings.saveData();
         });
 
         self.pauseConfidence.subscribe(function (newValue) {
-            self.saveData = true;
+            self.dataSave = true;
             self.settings.saveData();
         });
 
         self.warningConfidence.subscribe(function (newValue) {
-            self.saveData = true;
+            self.dataSave = true;
             self.settings.saveData();
         });
     
