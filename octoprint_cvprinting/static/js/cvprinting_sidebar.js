@@ -66,7 +66,7 @@ $(function(){
         };
 
         self.onSettingsBeforeSave = function() {
-            if(self.saveData === true)
+            if(self.saveData === false)
                 return;
             self.settings.settings.plugins.cvprinting.pausePrintOnIssue(self.pauseOnError());
             self.settings.settings.plugins.cvprinting.pauseThreshold(self.pauseConfidence());
