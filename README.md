@@ -20,7 +20,7 @@ If you're using older hardware, you might need to adjust settings like image res
 ## Setup
 
 1. Download the plugin's zip file.
-2. Install it via the bundled [Plugin Manager](https://docs.octoprint.org/en/master/bundledplugins/pluginmanager.html):
+2. Install it via the bundled [Plugin Manager](https://docs.octoprint.org/en/master/bundledplugins/pluginmanager.html) (right-click or middle-click to open in a new tab):
    - Open the **Plugin Manager** in OctoPrint.
    - Upload the downloaded zip file.
 3. Wait for the installation to complete, then restart OctoPrint.
@@ -44,7 +44,7 @@ After installation, configure the plugin by navigating to **Settings > CVPrintin
 ### 3. Notification Settings
 - **Notification Destinations**: Choose where you want notifications about detected defects to be sent.
 - **Discord Notifications**:
-  1. Set up a [Discord Webhook](https://support.discord.com/hc/en-us/articles/228383668-Intro-to-Webhooks):
+  1. Set up a [Discord Webhook](https://support.discord.com/hc/en-us/articles/228383668-Intro-to-Webhooks) (right-click or middle-click to open in a new tab):
      - Follow the steps for "Making a Webhook."
      - Copy the Webhook URL.
   2. Paste the Webhook URL into the **Discord Webhook URL** field in the CVPrinting settings.
