@@ -55,6 +55,7 @@ $(function(){
         }
 
         self.onBeforeBinding = function() {
+            self.dataSave = false;
             self.pauseOnError(self.settings.settings.plugins.cvprinting.pausePrintOnIssue());
             self.pauseConfidence(self.settings.settings.plugins.cvprinting.pauseThreshold());
             self.warningConfidence(self.settings.settings.plugins.cvprinting.warningThreshold());
