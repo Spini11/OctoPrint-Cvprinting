@@ -36,8 +36,11 @@ After installation, configure the plugin by navigating to **Settings > CVPrintin
   - Set the threshold for pausing the print.
   - Set the threshold for issuing warnings.
 
----
-  
+### 2. Webcam Settings
+- **Preferred Webcam**:
+  - *Classic*: Uses the default OctoPrint webcam setup.
+  - *Custom*: Manually input the *Snapshot URL* and *Stream URL* for a different webcam.
+
 ### 3. Notification Settings
 - **Notification Destinations**: Choose where you want notifications about detected defects to be sent.
 - **Discord Notifications**:
@@ -52,7 +55,3 @@ After installation, configure the plugin by navigating to **Settings > CVPrintin
 ## Usage
 
 Once configured, the plugin automatically activates when you start a print. It will monitor the printing process, detect potential defects, and take action based on your configured settings.
-
-## Recommended hardware
-
-
