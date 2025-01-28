@@ -6,6 +6,7 @@ $(function(){
         self.pauseOnError = ko.observable();
         self.pauseConfidence = ko.observable();
         self.warningConfidence = ko.observable();
+        self.dataSave = false;
         getConfidence().then(confidence => {
             document.getElementById("ConfidenceValue").innerText = confidence;
         });
@@ -65,9 +66,12 @@ $(function(){
         };
 
         self.onSettingsBeforeSave = function() {
+            if(self.saveData === true)
+                return;
             self.settings.settings.plugins.cvprinting.pausePrintOnIssue(self.pauseOnError());
             self.settings.settings.plugins.cvprinting.pauseThreshold(self.pauseConfidence());
             self.settings.settings.plugins.cvprinting.warningThreshold(self.warningConfidence());
+            self.saveData = false;
         };
 
 
@@ -82,14 +86,17 @@ $(function(){
         }
 
         self.pauseOnError.subscribe(function (newValue) {
+            self.saveData = true;
             self.settings.saveData();
         });
 
         self.pauseConfidence.subscribe(function (newValue) {
+            self.saveData = true;
             self.settings.saveData();
         });
 
         self.warningConfidence.subscribe(function (newValue) {
+            self.saveData = true;
             self.settings.saveData();
         });
     
