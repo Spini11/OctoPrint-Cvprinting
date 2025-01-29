@@ -7,6 +7,7 @@ $(function(){
         self.pauseConfidence = ko.observable();
         self.warningConfidence = ko.observable();
         self.dataSave = false;
+        self.pauseSubscriptions = false;
         getConfidence().then(confidence => {
             document.getElementById("ConfidenceValue").innerText = confidence;
         });
@@ -70,11 +71,16 @@ $(function(){
             //If save was not triggered by sidebar, do not save and update the values from the settings
             if(self.dataSave === false)
             {
+                self.pauseSubscriptions = true;
+                // Update values
                 self.pauseOnError(self.settings.settings.plugins.cvprinting.pausePrintOnIssue());
                 self.pauseConfidence(self.settings.settings.plugins.cvprinting.pauseThreshold());
                 self.warningConfidence(self.settings.settings.plugins.cvprinting.warningThreshold());
-                return;
+                self.pauseSubscriptions = false;
+        
+            return;
             }
+
             self.settings.settings.plugins.cvprinting.pausePrintOnIssue(self.pauseOnError());
             self.settings.settings.plugins.cvprinting.pauseThreshold(self.pauseConfidence());
             self.settings.settings.plugins.cvprinting.warningThreshold(self.warningConfidence());
@@ -93,16 +99,22 @@ $(function(){
         }
 
         self.pauseOnError.subscribe(function (newValue) {
+            if(self.pauseSubscriptions === true)
+                return;
             self.dataSave = true;
             self.settings.saveData();
         });
 
         self.pauseConfidence.subscribe(function (newValue) {
+            if(self.pauseSubscriptions === true)
+                return;
             self.dataSave = true;
             self.settings.saveData();
         });
 
         self.warningConfidence.subscribe(function (newValue) {
+            if(self.pauseSubscriptions === true)
+                return;
             self.dataSave = true;
             self.settings.saveData();
         });
