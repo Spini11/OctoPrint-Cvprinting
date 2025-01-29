@@ -55,20 +55,26 @@ $(function(){
         }
 
         self.onBeforeBinding = function() {
-            self.dataSave = false;
             self.pauseOnError(self.settings.settings.plugins.cvprinting.pausePrintOnIssue());
             self.pauseConfidence(self.settings.settings.plugins.cvprinting.pauseThreshold());
             self.warningConfidence(self.settings.settings.plugins.cvprinting.warningThreshold());
         };
 
         self.onAfterBinding = function() {
+            self.dataSave = false;
             updateDynamicVariable();
             setInterval(updateDynamicVariable, 5000);
         };
 
         self.onSettingsBeforeSave = function() {
+            //If save was not triggered by sidebar, do not save and update the values from the settings
             if(self.dataSave === false)
+            {
+                self.pauseOnError(self.settings.settings.plugins.cvprinting.pausePrintOnIssue());
+                self.pauseConfidence(self.settings.settings.plugins.cvprinting.pauseThreshold());
+                self.warningConfidence(self.settings.settings.plugins.cvprinting.warningThreshold());
                 return;
+            }
             self.settings.settings.plugins.cvprinting.pausePrintOnIssue(self.pauseOnError());
             self.settings.settings.plugins.cvprinting.pauseThreshold(self.pauseConfidence());
             self.settings.settings.plugins.cvprinting.warningThreshold(self.warningConfidence());
