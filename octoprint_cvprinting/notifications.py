@@ -26,6 +26,7 @@ class Notificationscvprinting:
             self.notify_telegram(type, data)
     
     def notify_discord(self, type, data):
+        #TODO: Remove duplicate code, check if discord message was sent successfully
         if type == "Warning":
             discord = Discord(url=self.discordSettings.get("webhookUrl"))
             discord.post(embeds=[
@@ -62,11 +63,13 @@ class Notificationscvprinting:
         elif type == "Error":
             payload["caption"] = f"CVPrinting: {data.get('message')}\nIssue triggered a printer pause"
         #Add image to payload
+        response = None
         if data.get("image"):
             with open(data.get("image"), "rb") as image_file:
                 files = {"photo": image_file}
-                respose = requests.post(url, data=payload, files=files)
+                response = requests.post(url, data=payload, files=files)
         else:
             response = requests.post(url, data=payload)
-            if response.status_code != 200:
-                self._logger.error(f"Error sending telegram notification: {response.text}")
+        
+        if response != None and response.status_code != 200:
+            self._logger.error(f"Error sending telegram notification: {response.text}")
