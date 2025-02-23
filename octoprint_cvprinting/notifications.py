@@ -1,3 +1,4 @@
+import os
 from discordwebhook import Discord
 import requests
 
@@ -26,29 +27,24 @@ class Notificationscvprinting:
             self.notify_telegram(type, data)
     
     def notify_discord(self, type, data):
-        #TODO: Remove duplicate code, check if discord message was sent successfully
+        file = None
+        discord = Discord(url=self.discordSettings.get("webhookUrl"))
+        embeds=[
+            {
+                "author": {
+                    "name": "CVPrinting",
+                },
+                "title": "Possible issue detected",
+            },
+                ]
         if type == "Warning":
-            discord = Discord(url=self.discordSettings.get("webhookUrl"))
-            discord.post(embeds=[
-            {
-                "author": {
-                    "name": "CVPrinting",
-                },
-                "title": f"{data.get('message')}",
-                "description": "Possible issue triggered a warning",
-            },
-                ],)
+            embeds[0]["description"] = "Possible issue triggered a warning"
         elif type == "Error":
-            discord = Discord(url=self.discordSettings.get("webhookUrl"))
-            discord.post(embeds=[
-            {
-                "author": {
-                    "name": "CVPrinting",
-                },
-                "title": f"{data.get('message')}",
-                "description": "Issue triggered a printer pause",
-            },
-                ],)
+            embeds[0]["description"] = "Issue triggered a printer pause"
+        response = discord.post(embeds=embeds)
+        if response.status_code not in [200, 204]:
+            self._logger.error(f"Error sending discord notification: {response.text}")
+            return
         if data.get("image"):
             with open(data.get("image"), "rb") as image_file:
                 response = discord.post(file={"file": image_file})
@@ -71,5 +67,5 @@ class Notificationscvprinting:
         else:
             response = requests.post(url, data=payload)
         
-        if response != None and response.status_code != 200:
+        if response and response.status_code != 200:
             self._logger.error(f"Error sending telegram notification: {response.text}")

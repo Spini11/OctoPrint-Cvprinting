@@ -103,6 +103,7 @@
         </div>
 
         <label class="notificationsLabel" style="font-weight: bold; font-size: 1.1em; display: block; margin-top: 20px;">Notifications</label>
+        <label class="notificationsLabel" style="font-weight: bold; font-size: 1em; display: block; margin-top: 20px;">Discord</label>
         <div class="control-group" style="display: flex; align-items: center; gap: 10px;">
             <input 
                 type="checkbox" 
@@ -121,26 +122,34 @@
                 data-bind="value: webhookUrl">
         </div>
                 
-        <label class="notificationsLabel" style="font-weight: bold; font-size: 1.1em; display: block; margin-top: 20px;">Telegram</label>
+        <label class="notificationsLabel" style="font-weight: bold; font-size: 1em; display: block; margin-top: 20px;">Telegram</label>
         <div class="control-group" style="display: flex; align-items: center; gap: 10px;">
             <input 
                 type="checkbox" 
                 id="telegram_enabled" 
-                data-bind="checked: telegramEnabled, enable: telegramToken()" 
+                data-bind="checked: telegramEnabled, enable: telegramToken() && (telegramChatId() || telegramChatIdFieldValue())"
                 style="margin-right: 10px;">
             <label for="telegram_enabled" class="TelegramEnabledLabel">Enable Telegram Notifications</label>
         </div>
         <div class="control-group" style="display: flex; align-items: center; gap: 10px;">
             <label for="telegramToken" class="TelegramTokenLabel" style="flex: 1;">Bot Token</label>
-            <input type="text" id="telegramToken" style="flex: 2; max-width: 300px; padding: 5px; border: 1px solid #ccc; border-radius: 4px;" data-bind="value: telegramToken">
-            <button type="button" style="padding: 5px 10px;" data-bind="click: connectBot">Connect</button>
+            <input type="text" id="telegramToken" style="flex: 2; max-width: 300px; padding: 5px; border: 1px solid #ccc; border-radius: 4px;" data-bind="value: telegramToken, disable: telegramConnecting">
+            <button type="button" style="padding: 5px 10px;" data-bind="click: connectBot, visible: !telegramConnecting()">Connect</button>
+            <button type="button" style="padding: 5px 10px;" data-bind="click: stopConnecting, visible: telegramConnecting">Cancel (All found chats will be dropped)</button>
         </div>
+        
+<p style="color: red; font-size: 0.9em; margin-top: 5px;" data-bind="visible: telegramConnectionUnauthorized">The inputted token is not valid. Check if it's correct and try again.</p>
+<p style="color: red; font-size: 0.9em; margin-top: -10px;" data-bind="visible: telegramConnectionError">There was an error connecting to Telegram. Try again.</p>
+<p style="color: red; font-size: 0.9em; margin-top: -10px;" data-bind="visible: telegramTokenChangedOnConnecting">The token was changed during connection attempt. Try again.</p>
+<p style="font-size: 0.9em; margin-top: -10px;" data-bind="visible: telegramTimeOutResults">60 seconds for sending a message have passed, if you don't see your account between available option, click on Connect and try again.</p>
+<p style="color: red; font-size: 0.9em; margin-top: -10px;" data-bind="visible: telegramTimeOutNoResults">60 seconds for sending a message have passed, but no message was received, click on Connect and try again.</p>
+
         <p style="margin-top: 10px; font-size: 0.9em; font-weight: bold;" data-bind="visible: telegramConnected">Currently selected chat ID</p>
 <input type="text" id="selectedChatId" style="flex: 2; max-width: 300px; padding: 5px; border: 1px solid #ccc; border-radius: 4px; background-color: #f0f0f0;" data-bind="value: telegramChatId, visible: telegramConnected" readonly>
         <p style="margin-top: -10px; font-size: 0.9em;" data-bind="visible: telegramConnecting">Send a message to the bot within next 60 seconds to get chat ID</p>
-        <div id="telegramConnection" class="control-group" style="display: flex; align-items: center; gap: 10px;" data-bind="visible: telegramConnecting">
+        <div id="telegramConnection" class="control-group" style="display: flex; align-items: center; gap: 10px;" data-bind="visible: telegramConnecting() || telegramShowFoundChats()">
             <label for="telegramChatIdLabel" class="TelegramChatIdLabel" style="flex: 1;">Chat ID</label>
-            <select id="telegramChatIdField" style="flex: 2; max-width: 300px; padding: 5px; border: 1px solid #ccc; border-radius: 4px;" ></select>
+            <select id="telegramChatIdField" style="flex: 2; max-width: 300px; padding: 5px; border: 1px solid #ccc; border-radius: 4px;" data-bind="value: telegramChatIdFieldValue"></select>
         </div>
     </form>
 </div>

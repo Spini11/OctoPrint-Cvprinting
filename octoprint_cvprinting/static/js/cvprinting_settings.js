@@ -6,7 +6,13 @@ $(function(){
         self.telegramConnecting = ko.observable(false);
         self.telegramConnectionUnauthorized = ko.observable(false);
         self.telegramConnectionError = ko.observable(false);
-
+        self.telegramTokenChangedOnConnecting = ko.observable(false);
+        self.telegramTimeOutResults = ko.observable(false);
+        self.telegramTimeOutNoResults = ko.observable(false);
+        self.telegramShowFoundChats = ko.observable(false);
+        self.timeoutId = ko.observable(null);
+        self.telegramChatIdFieldValue = ko.observable();
+    
 
         self.warningThreshold = ko.observable();
         self.pauseThreshold = ko.observable();
@@ -44,6 +50,10 @@ $(function(){
             self.selectedWebcam(self.settings.settings.plugins.cvprinting.selectedWebcam());
             self.telegramToken(self.settings.settings.plugins.cvprinting.telegramBotToken());
             self.telegramChatId(self.settings.settings.plugins.cvprinting.telegramChatId());
+            self.clearErrors();
+            self.telegramConnected(false);
+            self.telegramConnecting(false);
+            self.telegramShowFoundChats(false);
             if (self.telegramToken() !== "" && self.telegramChatId() !== ""){
                 self.telegramConnected(true);
             }
@@ -64,8 +74,12 @@ $(function(){
             }
         };
 
+        self.onSettingsHidden = function() {
+            self.stopFetching();
+        };
+
         self.onSettingsBeforeSave = function() {
-            console.log("saving settings");
+            self.stopFetching();
             self.settings.settings.plugins.cvprinting.warningThreshold(self.warningThreshold());
             self.settings.settings.plugins.cvprinting.pauseThreshold(self.pauseThreshold());
             self.settings.settings.plugins.cvprinting.pausePrintOnIssue(self.pauseOnError());
@@ -76,14 +90,13 @@ $(function(){
             if (self.telegramToken() === ""){
                 self.telegramConnected(false);
                 self.telegramEnabled(false);
-                document.getElementById("telegramChatIdField").options.length = 0;
+                self.settings.settings.plugins.cvprinting.telegramChatId("");
             }
-            if(document.getElementById("telegramChatIdField").value === ""){
-                self.telegramConnected(false);
-                self.telegramEnabled(false);
+            if(document.getElementById("telegramChatIdField").value !== ""){
+                console.log("Setting chat id to: " + document.getElementById("telegramChatIdField").value);
+                self.settings.settings.plugins.cvprinting.telegramChatId(document.getElementById("telegramChatIdField").value);
             }
             self.settings.settings.plugins.cvprinting.telegramBotToken(self.telegramToken());
-            self.settings.settings.plugins.cvprinting.telegramChatId(document.getElementById("telegramChatIdField").value);
             self.settings.settings.plugins.cvprinting.telegramNotifications(self.telegramEnabled());
             if (self.selectedWebcam() === "classic")
                 self.settings.settings.plugins.cvprinting.selectedWebcam("classic");
@@ -113,20 +126,69 @@ $(function(){
                 });
         }
 
+        self.stopFetching = function() {
+            clearTimeout(self.timeoutId());
+            self.telegramConnecting(false);
+        };
+
+        self.clearErrors = function() {
+            self.telegramConnectionUnauthorized(false);
+            self.telegramConnectionError(false);
+            self.telegramTokenChangedOnConnecting(false);
+            self.telegramTimeOutResults(false);
+            self.telegramTimeOutNoResults(false);
+        }
+
+        self.stopConnecting = function() {
+            self.stopFetching();
+        }
+
         self.connectBot = function () {
+            self.stopFetching();
             let attempts = 0;
             let lastId = -1;
             let token = document.getElementById("telegramToken").value;
             self.telegramConnecting(true);
             self.telegramConnected(false);
+            self.telegramShowFoundChats(false);
+            document.getElementById("telegramChatIdField").options.length = 0;
+            let option = document.createElement("option");
+            option.text = "None";
+            option.value = "";
+            document.getElementById("telegramChatIdField").add(option);
 
             function fetchUpdates() {
-            if (attempts >= 30) return; 
+                if (attempts >= 30)
+                {
+                    if (document.getElementById("telegramChatIdField").options.length <= 1)
+                    {
+                        self.telegramTimeOutNoResults(true);
+                    }
+                    else
+                    {
+                        self.telegramTimeOutResults(true);
+                        self.telegramShowFoundChats(true);
+                    }
+                    self.stopFetching();
+                    return;
+                }
                 fetch("https://api.telegram.org/bot" + token + "/getUpdates?offset=" + lastId)
-                .then(response => response.json())
+                .then(response => {
+                    if (!response.ok){
+                        self.telegramConnecting(false);
+                        if (response.status === 401)
+                            self.telegramConnectionUnauthorized(true);
+                        else
+                            self.telegramConnectionError(true);
+                        self.stopFetching();
+                        return;
+                    }
+                    return response.json();
+                }
+                )
                 .then(data => {
-                    console.log("Attempts: " + attempts);
-                    if (data.ok && data.result.length > 0){
+                    if (data && data.ok && attempts < 30){
+                        self.clearErrors();
                         data.result.forEach(element => {
                             let chat = element.message.chat;
                             let chatId = chat.id;
@@ -140,27 +202,18 @@ $(function(){
                             if (![...chatIdfield.options].some(option => Number(option.value) === chatId)){
                                 chatIdfield.add(option);
                             }
-                            console.log("Chat ID: " + chatId);
                         });
-                        
                     }
                 }).catch(error => {
-                    //If error code 401, token is invalid
-                    if (error.code === 401){
-                        self.telegramConnecting(false);
-                        self.telegramConnected(false);
-                        self.telegramConnectionUnauthorized(true);
-                    }
-                    else{
-                        console.error("Error fetching Telegram udpates:", error);
-                        self.telegramConnecting(false);
-                        self.telegramConnected(false);
-                        self.telegramConnectionError(true);
-                    }
+                    console.log("Error fetching Telegram updates:", error); 
+                    self.telegramConnecting(false);
+                    self.telegramConnected(false);
+                    self.telegramConnectionError(true);
+                    self.stopFetching();
                     return;
                 });
                 attempts++;
-                setTimeout(fetchUpdates, 2000);
+                self.timeoutId(setTimeout(fetchUpdates, 2000));
             }
             fetchUpdates();
         }
