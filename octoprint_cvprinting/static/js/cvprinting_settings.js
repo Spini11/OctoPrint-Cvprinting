@@ -93,7 +93,6 @@ $(function(){
                 self.settings.settings.plugins.cvprinting.telegramChatId("");
             }
             if(document.getElementById("telegramChatIdField").value !== ""){
-                console.log("Setting chat id to: " + document.getElementById("telegramChatIdField").value);
                 self.settings.settings.plugins.cvprinting.telegramChatId(document.getElementById("telegramChatIdField").value);
             }
             self.settings.settings.plugins.cvprinting.telegramBotToken(self.telegramToken());
