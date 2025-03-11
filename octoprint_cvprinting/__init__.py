@@ -35,7 +35,18 @@ class cvpluginInit(octoprint.plugin.StartupPlugin,
     def on_after_startup(self):
         self._logger.info("CVPrinting started")
         #Initialize the notifications module
-        self._notificationsModule = notifications.Notificationscvprinting(self._settings.get(["discordNotifications"]),self._settings.get(["discordWebhookUrl"]))
+        notif_config = {
+            "discord": {
+                "enabled": self._settings.get(["discordNotifications"]),
+                "webhookUrl": self._settings.get(["discordWebhookUrl"]),
+            },
+            "telegram": {
+                "enabled": self._settings.get(["telegramNotifications"]),
+                "botToken": self._settings.get(["telegramBotToken"]),
+                "chatId": self._settings.get(["telegramChatId"]),
+            }
+        }
+        self._notificationsModule = notifications.Notificationscvprinting(notif_config, self._logger)
         #Create folder for storing images
         os.makedirs(os.path.join(self._basefolder, 'data/images'), exist_ok=True)
 
@@ -52,7 +63,7 @@ class cvpluginInit(octoprint.plugin.StartupPlugin,
 
 
     def get_settings_defaults(self):
-        return dict(pausePrintOnIssue=False, pauseThreshold=80, warningThreshold=50, cvprintingSnapshotUrl="", cvprintingStreamUrl="", discordNotifications=False, discordWebhookUrl="", selectedWebcam="classic")
+        return dict(pausePrintOnIssue=False, pauseThreshold=80, warningThreshold=50, cvprintingSnapshotUrl="", cvprintingStreamUrl="", discordNotifications=False, discordWebhookUrl="", selectedWebcam="classic", telegramNotifications=False, telegramBotToken="", telegramChatId="")
 
     def get_webcam_list(self):
         webcams = octoprint.webcams.get_webcams()
@@ -206,6 +217,13 @@ class cvpluginInit(octoprint.plugin.StartupPlugin,
             else:
                 self._logger.info("Discord notifications disabled")
                 self._notificationsModule.destinations.remove("discord")
+        if "telegramBotToken" in data.keys():
+            self._notificationsModule.telegramSettings["botToken"] = data["telegramBotToken"]
+        if "telegramChatId" in data.keys():
+            self._notificationsModule.telegramSettings["chatId"] = data["telegramChatId"]
+        if "telegramNotifications" in data.keys():
+            self._notificationsModule.destinations.append("telegram")
+
         #Save the new values to settings
         for key, value in data.items():
             self._settings.set([key], value)
