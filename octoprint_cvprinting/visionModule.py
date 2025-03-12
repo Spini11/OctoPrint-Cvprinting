@@ -1,10 +1,10 @@
 import os
 import requests
-from ultralytics import YOLO
 import uuid
 import MNN
 import MNN.cv as cv2
 import MNN.numpy as np
+from PIL import Image
 
 
 class visionModule:
@@ -64,12 +64,20 @@ class visionModule:
         return imageLocation, self.convertOuput(result_boxes, result_scores, result_class_ids) 
 
     def getImage(self, url):
-        imageLocation = os.path.join(self.folder,f'images/{str(uuid.uuid4())}.png')
+        tmpImageLocation = os.path.join(self.folder,f'images/{str(uuid.uuid4())}.png')
+        imageLocation = os.path.join(self.folder,f'images/{str(uuid.uuid4())}.jpg')
         response = requests.get(url)
         if response.status_code == 200:
-            with open(imageLocation, 'wb') as f:
-                f.write(response.content)
-            return imageLocation
+            try:
+                with open(tmpImageLocation, 'wb') as f:
+                    f.write(response.content)
+                img = Image.open(tmpImageLocation).convert('RGB')
+                img.save(imageLocation, format="JPEG")
+                os.remove(tmpImageLocation)
+                return imageLocation
+            except Exception as e:
+                print(f"error during image conversion {e}")
+                return None
         else:
             return None
 
