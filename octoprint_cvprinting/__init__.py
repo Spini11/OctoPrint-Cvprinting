@@ -21,6 +21,7 @@ class cvpluginInit(octoprint.plugin.StartupPlugin,
                        octoprint.plugin.BlueprintPlugin,
                        octoprint.plugin.ShutdownPlugin):
     _notificationsModule = None
+    _visionModule = None
     _lastDetection = 0
     _lastPause = 0
     _running = False
@@ -47,6 +48,7 @@ class cvpluginInit(octoprint.plugin.StartupPlugin,
             }
         }
         self._notificationsModule = notifications.Notificationscvprinting(notif_config, self._logger)
+        self._visionModule = visionModule.visionModule(self._basefolder)
         #Create folder for storing images
         os.makedirs(os.path.join(self._basefolder, 'data/images'), exist_ok=True)
 
@@ -133,7 +135,8 @@ class cvpluginInit(octoprint.plugin.StartupPlugin,
                 time.sleep(5)
                 continue
             #Call vision module to check the image for printing errors
-            image, result = visionModule.CheckImage(webcam["snapshotUrl"], os.path.join(self._basefolder, 'data'))
+            image, result = self._visionModule.CheckImage(webcam["snapshotUrl"])
+            print(result)
             if result == 1:
                 self._logger.error("Error downloading image")
                 time.sleep(5)
@@ -150,7 +153,8 @@ class cvpluginInit(octoprint.plugin.StartupPlugin,
                 time.sleep(5)
                 continue
             #Convert the confidence value to percentage
-            conf = result.get("conf") * 100
+            conf = result.get("conf")
+            print(conf)
             self._lastConfidence = self._currentDetection
             self._currentDetection = conf
             #If the confidence is above the pause threshold, send a notification, pause the print 
@@ -163,7 +167,7 @@ class cvpluginInit(octoprint.plugin.StartupPlugin,
                 #If the last pause was more than 10 minutes ago, send a notification and pause the print
                 if((self._lastPause + 10*60) < time.time()):
                     self._lastPause = time.time()
-                    self._notificationsModule.notify("Error", {"message": "Possible issue detected", "image": image})
+                    self._notificationsModule.notify("Error", {"image": image, "conf": conf, "label": result.get("label")})
                     self._pausedOnError = True
                     self._printer.pause_print()
                     break
@@ -180,7 +184,7 @@ class cvpluginInit(octoprint.plugin.StartupPlugin,
                 #If the last detection was more than 5 minutes ago, send a notification
                 if((self._lastDetection + 5*60) < time.time()):
                     self._lastDetection = time.time()
-                    self._notificationsModule.notify("Warning", {"message": "Possible issue detected", "image": image})
+                    self._notificationsModule.notify("Warning", {"image": image, "conf": conf, "label": result.get("label")})
                 #If the last detection was less than 5 minutes ago, update the last detection time to prevent repeated notifications
                 else:
                     self._lastDetection = time.time()

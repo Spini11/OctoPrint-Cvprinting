@@ -6,6 +6,8 @@ class Notificationscvprinting:
     destinations = []
     discordSettings = {}
     telegramSettings = {}
+    _warningTemplate = "CVPrinting has detected possible {label} with confidence {conf} which triggered a warning"
+    _errorTemplate = "CVPrinting has detected possible {label} with confidence {conf} which triggered a printer PAUSE"
     _main = None
     _logger = None
 
@@ -25,6 +27,7 @@ class Notificationscvprinting:
             self.notify_discord(type, data)
         if "telegram" in self.destinations:
             self.notify_telegram(type, data)
+        print(data)
     
     def notify_discord(self, type, data):
         file = None
@@ -38,9 +41,9 @@ class Notificationscvprinting:
             },
                 ]
         if type == "Warning":
-            embeds[0]["description"] = "Possible issue triggered a warning"
+            embeds[0]["description"] = self._warningTemplate.format(label=data.get("label"), conf=data.get("conf"))
         elif type == "Error":
-            embeds[0]["description"] = "Issue triggered a printer pause"
+            embeds[0]["description"] = self._errorTemplate.format(label=data.get("label"), conf=data.get("conf"))
         response = None
         if data.get("image"):
             if os.path.exists(data.get("image")):
@@ -58,9 +61,9 @@ class Notificationscvprinting:
         url = f"https://api.telegram.org/bot{self.telegramSettings.get('botToken')}/"
         payload = {"chat_id": self.telegramSettings.get("chatId"), "caption": ""}
         if type == "Warning":
-            payload["caption"] = f"CVPrinting: Possible issue triggered a warning"
+            payload["caption"] = self._warningTemplate.format(label=data.get("label"), conf=data.get("conf"))
         elif type == "Error":
-            payload["caption"] = f"CVPrinting: Issue triggered a printer pause"
+            payload["caption"] = self._errorTemplate.format(label=data.get("label"), conf=data.get("conf"))
         #Add image to payload
         response = None
         if data.get("image") and os.path.exists(data.get("image")):
