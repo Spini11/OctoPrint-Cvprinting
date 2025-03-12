@@ -136,7 +136,6 @@ class cvpluginInit(octoprint.plugin.StartupPlugin,
                 continue
             #Call vision module to check the image for printing errors
             image, result = self._visionModule.CheckImage(webcam["snapshotUrl"])
-            print(result)
             if result == 1:
                 self._logger.error("Error downloading image")
                 time.sleep(5)
@@ -154,7 +153,6 @@ class cvpluginInit(octoprint.plugin.StartupPlugin,
                 continue
             #Convert the confidence value to percentage
             conf = result.get("conf")
-            print(conf)
             self._lastConfidence = self._currentDetection
             self._currentDetection = conf
             #If the confidence is above the pause threshold, send a notification, pause the print 
