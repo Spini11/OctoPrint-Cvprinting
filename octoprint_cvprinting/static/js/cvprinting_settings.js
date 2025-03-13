@@ -141,6 +141,22 @@ $(function(){
             self.stopFetching();
         }
 
+        self.sendTelegramTest = function() {
+            var url = OctoPrint.getBlueprintUrl("cvprinting") + "test_notifications";
+            OctoPrint.post(url, {target: "telegram"})
+            .done(function(response) {
+                console.log(response);
+            });
+        }
+
+        self.sendDiscordTest = function() {
+            var url = OctoPrint.getBlueprintUrl("cvprinting") + "test_notifications";
+            OctoPrint.post(url, {target: "discord"})
+            .done(function(response) {
+                console.log(response);
+            });
+        }
+
         self.connectBot = function () {
             self.stopFetching();
             let attempts = 0;

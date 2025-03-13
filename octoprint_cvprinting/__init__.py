@@ -1,6 +1,7 @@
 import os
 import time
 import threading
+import flask
 
 from flask import jsonify
 import octoprint.plugin
@@ -105,6 +106,23 @@ class cvpluginInit(octoprint.plugin.StartupPlugin,
     @octoprint.plugin.BlueprintPlugin.route("/get_confidence", methods=["POST"])
     def get_confidence(self):
         return jsonify({"variable": self._currentDetection})
+    
+    #API endpoint to test notifications
+    @octoprint.plugin.BlueprintPlugin.route("/test_notifications", methods=["POST"])
+    def test_notifications(self):
+        # print(flask.request.json)
+        value = None
+        if not "target" in flask.request.values:
+            return jsonify({"status": "Error: No target specified"})
+        if flask.request.values["target"] == "discord":
+            value = self._notificationsModule.notify("Test", {"target":"discord"})
+        elif flask.request.values["target"] == "telegram":
+            value = self._notificationsModule.notify("Test", {"target":"telegram"})
+        if value is 0:
+            return jsonify({"status": "Notification sent"})
+        else:
+            return jsonify({"status": "Error sending notification"})
+            
     
     def get_template_vars(self):
         return dict(currentDetection=self._currentDetection)
