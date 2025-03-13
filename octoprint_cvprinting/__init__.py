@@ -265,6 +265,9 @@ class cvpluginInit(octoprint.plugin.StartupPlugin,
                 self._lastPause = time.time()
             self.start_monitoring()
 
+    def is_blueprint_csrf_protected(self):
+        return True
+
 __plugin_name__ = "CVPrinting"
 __plugin_pythoncompat__ = ">=3.7,<4"
 __plugin_implementation__ = cvpluginInit()
