@@ -117,12 +117,11 @@ $(function(){
         });
 
         function getWebcams() {
-            return fetch("/plugin/cvprinting/get_webcams", {method: "POST"})
-                .then(Response => Response.json())
-                .catch(error => {
-                    console.error("Error fetching webcams:", error);
-                    return [];
-                });
+            var url = OctoPrint.getBlueprintUrl("cvprinting") + "get_webcams";
+            return OctoPrint.post(url)
+            .done(function(response) {
+                return response;
+            });
         }
 
         self.stopFetching = function() {
