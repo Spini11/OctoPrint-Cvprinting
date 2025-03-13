@@ -97,11 +97,10 @@ $(function(){
             //         return -1; // Return a default value in case of error
             //     });
             var url = OctoPrint.getBlueprintUrl("cvprinting") + "get_confidence";
-            OctoPrint.post(url)
-            .done(function(response) {
+            return OctoPrint.post(url)
+            .then(function(response) {
                 return Math.floor(response.variable);
             });
-            
         }
 
         self.pauseOnError.subscribe(function (newValue) {
