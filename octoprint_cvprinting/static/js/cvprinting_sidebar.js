@@ -89,13 +89,19 @@ $(function(){
 
 
         function getConfidence() {
-            return fetch("/plugin/cvprinting/get_confidence", {method: "POST"})
-                .then(response => response.json())
-                .then(data => Math.floor(data.variable))
-                .catch(error => {
-                    console.error("Error fetching variable:", error);
-                    return -1; // Return a default value in case of error
-                });
+            // return fetch("/plugin/cvprinting/get_confidence", {method: "POST"})
+            //     .then(response => response.json())
+            //     .then(data => Math.floor(data.variable))
+            //     .catch(error => {
+            //         console.error("Error fetching variable:", error);
+            //         return -1; // Return a default value in case of error
+            //     });
+            var url = OctoPrint.getBlueprintUrl("cvprinting") + "get_confidence";
+            OctoPrint.post(url)
+            .done(function(response) {
+                return Math.floor(response.variable);
+            });
+            
         }
 
         self.pauseOnError.subscribe(function (newValue) {
