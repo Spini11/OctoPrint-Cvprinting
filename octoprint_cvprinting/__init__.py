@@ -144,6 +144,10 @@ class cvpluginInit(octoprint.plugin.StartupPlugin,
                 self._logger.error("Error processing image")
                 time.sleep(5)
                 continue
+            elif result == 3:
+                self._logger.error("Error reading image")
+                time.sleep(5)
+                continue
             #If no issues are detected, update the last confidence and current detection values and continue
             if not result:
                 self._lastConfidence = self._currentDetection

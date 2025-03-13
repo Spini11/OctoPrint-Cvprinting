@@ -18,10 +18,12 @@ class visionModule:
 
         config = {}
         config["precision"] = "medium"
-        config["numThread"] = 1
+        config["numThread"] = 2 if os.cpu_count() >= 2 else 1
         config["backend"] = "CPU"
         self.config = config
 
+    #Code of the following function was adapted from https://docs.ultralytics.com/integrations/mnn/#mnn-only-inference
+    #Original author: UltraLytics, Accesed on 13.3.2025
     def CheckImage(self, img):
         imageLocation = self.getImage(img)
         if imageLocation is None:
@@ -29,6 +31,8 @@ class visionModule:
         rt = MNN.nn.create_runtime_manager((self.config,))
         net = MNN.nn.load_module_from_file(self.model, [], [], runtime_manager=rt)
         original_image = cv2.imread(imageLocation)
+        if original_image is None:
+            return None, 3
         ih, iw, _ = original_image.shape
         length = max((ih, iw))
         scale = length / 640
