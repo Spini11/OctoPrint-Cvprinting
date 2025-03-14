@@ -12,6 +12,13 @@ $(function(){
         self.telegramShowFoundChats = ko.observable(false);
         self.timeoutId = ko.observable(null);
         self.telegramChatIdFieldValue = ko.observable();
+        self.telegramTestNotificationError = ko.observable(false);
+        self.telegramTestNotificationMessageShow = ko.observable(false);
+        self.telegramTestNotificationMessage = ko.observable();
+        self.discordTestNotificationError = ko.observable(false);
+        self.discordTestNotificationMessageShow = ko.observable(false);
+        self.discordTestNotificationMessage = ko.observable();
+        
     
 
         self.warningThreshold = ko.observable();
@@ -54,6 +61,12 @@ $(function(){
             self.telegramConnected(false);
             self.telegramConnecting(false);
             self.telegramShowFoundChats(false);
+            self.telegramTestNotificationError(false);
+            self.telegramTestNotificationMessageShow(false);
+            self.discordTestNotificationError(false);
+            self.discordTestNotificationMessageShow(false);
+            self.discordTestNotificationMessage("");
+            self.telegramTestNotificationMessage("");
             if (self.telegramToken() !== "" && self.telegramChatId() !== ""){
                 self.telegramConnected(true);
             }
@@ -94,6 +107,11 @@ $(function(){
             }
             if(document.getElementById("telegramChatIdField").value !== ""){
                 self.settings.settings.plugins.cvprinting.telegramChatId(document.getElementById("telegramChatIdField").value);
+            }
+            else{
+                self.settings.settings.plugins.cvprinting.telegramChatId("");
+                self.telegramConnected(false);
+                self.telegramEnabled(false);
             }
             self.settings.settings.plugins.cvprinting.telegramBotToken(self.telegramToken());
             self.settings.settings.plugins.cvprinting.telegramNotifications(self.telegramEnabled());
@@ -139,21 +157,43 @@ $(function(){
 
         self.stopConnecting = function() {
             self.stopFetching();
+            document.getElementById("telegramChatIdField").options.length = 0;
+            self.telegramChatId("");
         }
 
         self.sendTelegramTest = function() {
             var url = OctoPrint.getBlueprintUrl("cvprinting") + "test_notifications";
-            OctoPrint.post(url, {target: "telegram"})
+            console.log(self.telegramConnected());
+            console.log(self.telegramChatId());
+            console.log(self.telegramChatIdFieldValue());
+            chatId = self.telegramChatId();
+            if (self.telegramConnected() === false)
+            {
+                chatId = self.telegramChatIdFieldValue();
+            }
+            OctoPrint.post(url, {target: "telegram", token: self.telegramToken(), chat_id: chatId})
             .done(function(response) {
-                console.log(response);
+                self.telegramTestNotificationError(false);
+                self.telegramTestNotificationMessageShow(true);
+                self.telegramTestNotificationMessage(response.message);
+            }).fail(function (jqXHR) {
+                self.telegramTestNotificationError(true);
+                self.telegramTestNotificationMessageShow(false);
+                self.telegramTestNotificationMessage(jqXHR.responseJSON.message);
             });
         }
 
         self.sendDiscordTest = function() {
             var url = OctoPrint.getBlueprintUrl("cvprinting") + "test_notifications";
-            OctoPrint.post(url, {target: "discord"})
+            OctoPrint.post(url, {target: "discord", webhook_url: self.webhookUrl()})
             .done(function(response) {
-                console.log(response);
+                self.discordTestNotificationError(false);
+                self.discordTestNotificationMessageShow(true);
+                self.discordTestNotificationMessage(response.message);
+            }).fail(function (jqXHR) {
+                self.discordTestNotificationError(true);
+                self.discordTestNotificationMessageShow(false);
+                self.discordTestNotificationMessage(jqXHR.responseJSON.message);
             });
         }
 
