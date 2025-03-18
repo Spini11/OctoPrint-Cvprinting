@@ -1,6 +1,7 @@
 import os
 import time
 import threading
+import flask
 
 from flask import jsonify
 import octoprint.plugin
@@ -105,6 +106,28 @@ class cvpluginInit(octoprint.plugin.StartupPlugin,
     @octoprint.plugin.BlueprintPlugin.route("/get_confidence", methods=["POST"])
     def get_confidence(self):
         return jsonify({"variable": self._currentDetection})
+    
+    #API endpoint to test notifications
+    @octoprint.plugin.BlueprintPlugin.route("/test_notifications", methods=["POST"])
+    def test_notifications(self):
+        value = None
+        if not "target" in flask.request.values:
+            return jsonify({"message": "Error: No target specified"}), 400
+        if flask.request.values["target"] == "discord":
+            if not "webhook_url" in flask.request.values:
+                return jsonify({"message": "Error: No webhook URL specified"}), 400
+            value = self._notificationsModule.notify("Test", {"target":"discord", "webhook_url": flask.request.values["webhook_url"]})
+        elif flask.request.values["target"] == "telegram":
+            if not "chat_id" in flask.request.values or not "token" in flask.request.values:
+                return jsonify({"message": "Error: No chat ID or token specified"}), 400
+            value = self._notificationsModule.notify("Test", {"target":"telegram", "chat_id": flask.request.values["chat_id"], "token": flask.request.values["token"]})
+        else:
+            return jsonify({"message": "Error: Invalid target specified"}), 400
+        if value == 0:
+            return jsonify({"message": "Notification sent"}), 200
+        else:
+            return jsonify({"message": "Error sending notification, verify inputted data"}), 400
+            
     
     def get_template_vars(self):
         return dict(currentDetection=self._currentDetection)
