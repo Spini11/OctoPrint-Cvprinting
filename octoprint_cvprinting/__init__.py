@@ -2,6 +2,7 @@ import multiprocessing
 import os
 import time
 import flask
+import threading
 
 from flask import jsonify
 import octoprint.plugin
