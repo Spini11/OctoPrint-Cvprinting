@@ -13,16 +13,17 @@ class Notificationscvprinting:
     _logger = None
 
     def __init__(self, notificationsConfig, logger):
-        self.discordSettings = notificationsConfig.get("discord")
-        self.telegramSettings = notificationsConfig.get("telegram")
-        if self.discordSettings.get("enabled"):
-            self.destinations.append("discord")
-        elif "discord" in self.destinations:
-            self.destinations.remove("discord")
-        if self.telegramSettings.get("enabled"):
-            self.destinations.append("telegram")
-        elif "telegram" in self.destinations:
-            self.destinations.remove("telegram")
+        if notificationsConfig:
+            self.discordSettings = notificationsConfig.get("discord")
+            self.telegramSettings = notificationsConfig.get("telegram")
+            if self.discordSettings.get("enabled"):
+                self.destinations.append("discord")
+            elif "discord" in self.destinations:
+                self.destinations.remove("discord")
+            if self.telegramSettings.get("enabled"):
+                self.destinations.append("telegram")
+            elif "telegram" in self.destinations:
+                self.destinations.remove("telegram")
         self._logger = logger
             
         

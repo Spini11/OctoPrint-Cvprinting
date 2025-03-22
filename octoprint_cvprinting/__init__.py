@@ -327,9 +327,9 @@ class cvpluginInit(octoprint.plugin.StartupPlugin,
         if "pausePrintOnIssue" in data.keys():
             self._flagsArray[0] = data["pausePrintOnIssue"]
         if "pauseThreshold" in data.keys():
-            self._intArray[3] = data["pauseThreshold"]
+            self._intArray[3] = int(data["pauseThreshold"])
         if "warningThreshold" in data.keys():
-            self._intArray[4] = data["warningThreshold"]
+            self._intArray[4] = int(data["warningThreshold"])
         print(self._currentWebcam.get("snapshotUrl"))
         #Save the new values to settings
         for key, value in data.items():
