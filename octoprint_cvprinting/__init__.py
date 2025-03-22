@@ -1,6 +1,6 @@
+import multiprocessing
 import os
 import time
-import threading
 import flask
 
 from flask import jsonify
@@ -21,35 +21,37 @@ class cvpluginInit(octoprint.plugin.StartupPlugin,
                        octoprint.plugin.EventHandlerPlugin,
                        octoprint.plugin.BlueprintPlugin,
                        octoprint.plugin.ShutdownPlugin):
+    
     _notificationsModule = None
-    _visionModule = None
-    _lastDetection = 0
-    _lastPause = 0
-    _running = False
-    _thread = None
-    _currentJob = None
-    _pausedOnError = False
-    _currentDetection = 0
-    _lastConfidence = 0
+
+    _CVprocess = None
+    _queueListener = None
+
+    #Need to be passed into the cv process
+
+    #lastPauseTime = 0, lastDetectionTime = 1, currentConfidence = 2, pauseThreshold = 3, warningThreshold = 4
+    _intArray = multiprocessing.Array('d', [0] *5)
+
+    #pausePrintOnIssue = 0, running = 1, pausedOnError = 2
+    _flagsArray = multiprocessing.Array('b', [False] * 3)
 
 
+    _discordSettings = multiprocessing.Manager().dict({"enabled": False, "webhookUrl": ""})
+    _telegramSettings = multiprocessing.Manager().dict({"enabled": False, "botToken": "", "chatId": ""})
+    _currentWebcam = multiprocessing.Manager().dict({"name": "", "streamUrl": "", "snapshotUrl": ""})
 
     def on_after_startup(self):
         self._logger.info("CVPrinting started")
-        #Initialize the notifications module
-        notif_config = {
-            "discord": {
-                "enabled": self._settings.get(["discordNotifications"]),
-                "webhookUrl": self._settings.get(["discordWebhookUrl"]),
-            },
-            "telegram": {
-                "enabled": self._settings.get(["telegramNotifications"]),
-                "botToken": self._settings.get(["telegramBotToken"]),
-                "chatId": self._settings.get(["telegramChatId"]),
-            }
-        }
-        self._notificationsModule = notifications.Notificationscvprinting(notif_config, self._logger)
-        self._visionModule = visionModule.visionModule(self._basefolder)
+        self._notificationsModule = notifications.Notificationscvprinting(None, self._logger)
+        self._discordSettings["enabled"] = self._settings.get(["discordNotifications"])
+        self._discordSettings["webhookUrl"] = self._settings.get(["discordWebhookUrl"])
+        self._telegramSettings["enabled"] = self._settings.get(["telegramNotifications"])
+        self._telegramSettings["botToken"] = self._settings.get(["telegramBotToken"])
+        self._telegramSettings["chatId"] = self._settings.get(["telegramChatId"])
+        webcam = self.get_current_webcam()
+        self._currentWebcam["name"] = webcam["name"]
+        self._currentWebcam["streamUrl"] = webcam["streamUrl"]
+        self._currentWebcam["snapshotUrl"] = webcam["snapshotUrl"]
         #Create folder for storing images
         os.makedirs(os.path.join(self._basefolder, 'data/images'), exist_ok=True)
 
@@ -105,7 +107,7 @@ class cvpluginInit(octoprint.plugin.StartupPlugin,
     #API endpoint to get the current confidence value
     @octoprint.plugin.BlueprintPlugin.route("/get_confidence", methods=["POST"])
     def get_confidence(self):
-        return jsonify({"variable": self._currentDetection})
+        return jsonify({"variable": self._intArray[2]})
     
     #API endpoint to test notifications
     @octoprint.plugin.BlueprintPlugin.route("/test_notifications", methods=["POST"])
@@ -130,7 +132,7 @@ class cvpluginInit(octoprint.plugin.StartupPlugin,
             
     
     def get_template_vars(self):
-        return dict(currentDetection=self._currentDetection)
+        return dict(currentDetection=self._intArray[2])
 
     def get_assets(self):
         return dict(
@@ -139,83 +141,118 @@ class cvpluginInit(octoprint.plugin.StartupPlugin,
     
     def start_monitoring(self):
         #If the monitoring thread is already running, return
-        if self._running:
+        if self._flagsArray[1]:
             return
         #Delete all images in the folder before starting monitoring
         for filename in os.listdir(os.path.join(self._basefolder, 'data/images/')):
             file_path = os.path.join(os.path.join(self._basefolder, 'data/images/'), filename)
             if os.path.isfile(file_path):
                 os.remove(file_path)
-        self._running = True
-        self._thread = threading.Thread(target=self.monitor)
-        self._thread.start()
-    
-    def monitor(self):
-        while self._running:
-            webcam = self.get_current_webcam()
+        with multiprocessing.Manager() as manager:  
+            self._flagsArray[1] = True
+            queue = multiprocessing.Queue()
+            self._queueListener = threading.Thread(target=self.queue_listener, args=(queue,))
+            self._queueListener.daemon = True
+            self._queueListener.start()
+
+            #TODO: Remove this tmp settings update
+            webcamTmp = self.get_current_webcam()
+            self._currentWebcam["name"] = webcamTmp["name"]
+            self._currentWebcam["streamUrl"] = webcamTmp["streamUrl"]
+            self._currentWebcam["snapshotUrl"] = webcamTmp["snapshotUrl"]
+            self._intArray[3] = int(self._settings.get(["pauseThreshold"]))
+            self._intArray[4] = int(self._settings.get(["warningThreshold"]))
+            self._flagsArray[0] = self._settings.get(["pausePrintOnIssue"])
+
+            self._CVprocess = multiprocessing.Process(target=self.monitor, args=(self._currentWebcam, self._basefolder, self._discordSettings, self._telegramSettings, self._intArray, self._flagsArray, queue,))
+            self._CVprocess.start()
+
+    #queue implementation to send messages to the main thread, used for logging and pausing the print
+    def queue_listener(self, queue):
+        print("Queue listener started")
+        print(self._flagsArray[1])
+        while self._flagsArray[1]:
+            msg_type, data = queue.get()
+            if msg_type == "pause":
+                #set the pausedOnError flag to true
+                self._flagsArray[2] = True
+                self._logger.info("Pausing print due to high confidence value")
+                self._printer.pause_print()
+                #set running flag to false
+                self._flagsArray[1] = False
+            elif msg_type == "INFO":
+                self._logger.info(data)
+            elif msg_type == "ERROR":
+                self._logger.error(data)
+                                        
+    def monitor(self, webcam, basefolder, discordSettings, telegramSettings, intArray, flagsArray, queue):
+        intArray[2] = 0 #currentConfidence
+        #If pausedOnError is true, update lastPauseTime and lastDetectionTime, otherwise set them to 0
+        if flagsArray[2]:
+            intArray[0] = time.time() #lastPauseTime
+            intArray[1] = time.time() #lastDetectionTime
+        else:
+            intArray[0] = 0 #lastPauseTime
+            intArray[1] = 0 #lastDetectionTime
+        flagsArray[2] = False #pausedOnError
+        notificationsconfig = {"discord": discordSettings, "telegram": telegramSettings}
+        print("Initializing notifications module")
+        #TODO: Implement logging for notifications module
+        notificationsModule = notifications.Notificationscvprinting(notificationsconfig,  None)
+        print("Initializing vision module")
+        visionModuleInstance = visionModule.visionModule(basefolder)
+        lastConfidence = 0
+        #flagsArray[1] is the running flag
+        while flagsArray[1]:
+            notificationsModule = notifications.Notificationscvprinting(notificationsconfig,  None)
             if not webcam:
-                self._logger.error("Webcam not found")
+                queue.put(("ERROR", "No webcam selected"))
                 time.sleep(5)
                 continue
-            #Call vision module to check the image for printing errors
-            image, result = self._visionModule.CheckImage(webcam["snapshotUrl"])
+            image, result = visionModuleInstance.CheckImage(webcam.get("snapshotUrl"))
             if result == 1:
-                self._logger.error("Error downloading image")
+                print("Error getting image")
+                queue.put(("ERROR", "Error getting image"))
                 time.sleep(5)
                 continue
-            elif result == 2:
-                self._logger.error("Error processing image")
+            if result == 2:
+                print("Error processing image")
+                queue.put(("ERROR", "Error processing image"))
                 time.sleep(5)
                 continue
-            elif result == 3:
-                self._logger.error("Error reading image")
-                time.sleep(5)
-                continue
-            #If no issues are detected, update the last confidence and current detection values and continue
+            #intArray[2] is the current confidence value
+            lastConfidence = intArray[2]
             if not result:
-                self._lastConfidence = self._currentDetection
-                self._currentDetection = 0
+                intArray[2] = 0
                 os.remove(image)
                 time.sleep(5)
                 continue
-            #Convert the confidence value to percentage
-            conf = result.get("conf")
-            self._lastConfidence = self._currentDetection
-            self._currentDetection = conf
-            #If the confidence is above the pause threshold, send a notification, pause the print 
-            if conf > float(self._settings.get(["pauseThreshold"])) and self._settings.get(["pausePrintOnIssue"]):
-                #If the previous confidence was below the pause threshold, wait for 1 second before checking the next image, only pause if detection is consistent for 2 images
-                if self._lastConfidence < float(self._settings.get(["pauseThreshold"])):
+            intArray[2] = result.get("conf")
+            #intArray[3] is the pause threshold, flagsArray[0] is the pauseOnError flag
+            if intArray[2] > float(intArray[3]) and flagsArray[0]:
+                if lastConfidence < float(intArray[3]):
                     os.remove(image)
                     time.sleep(1)
                     continue
-                #If the last pause was more than 10 minutes ago, send a notification and pause the print
-                if((self._lastPause + 10*60) < time.time()):
-                    self._lastPause = time.time()
-                    self._notificationsModule.notify("Error", {"image": image, "conf": conf, "label": result.get("label")})
-                    self._pausedOnError = True
-                    self._printer.pause_print()
-                    break
-                #If the last pause was less than 10 minutes ago, update the last pause time to prevent repeated pause on false positives
-                else:
-                    self._lastPause = time.time()
-            #If the confidence is above the warning threshold, send a notification
-            elif conf > float(self._settings.get(["warningThreshold"])):
-                #If the previous confidence was below the warning threshold, wait for 1 second before checking the next image, only send a notification if detection is consistent for 2 images
-                if self._lastConfidence < float(self._settings.get(["warningThreshold"])):
+                #intArray[0] is the last pause time
+                if (intArray[0] + 10*60) < time.time():
+                    intArray[0] = time.time()
+                    notificationsModule.notify("Error", {"image": image, "conf": intArray[2], "label": result.get("label")})
+                    queue.put(("pause", None))
+                    return
+            #intArray[4] is the warning threshold
+            elif intArray[2] > float(intArray[4]):
+                if lastConfidence < float(intArray[4]):
                     os.remove(image)
                     time.sleep(1)
                     continue
-                #If the last detection was more than 5 minutes ago, send a notification
-                if((self._lastDetection + 5*60) < time.time()):
-                    self._lastDetection = time.time()
-                    self._notificationsModule.notify("Warning", {"image": image, "conf": conf, "label": result.get("label")})
-                #If the last detection was less than 5 minutes ago, update the last detection time to prevent repeated notifications
-                else:
-                    self._lastDetection = time.time()
-            #Delete the image after processing and wait for 5 seconds before checking the next image
+                #intArray[1] is the last detection time
+                if (intArray[1] + 5*60) < time.time():
+                    intArray[1] = time.time()
+                    notificationsModule.notify("Warning", {"image": image, "conf": intArray[2], "label": result.get("label")})
             os.remove(image)
             time.sleep(5)
+            
 
     def stop_monitoring(self):
         #Delete all images in the folder before stopping monitoring
@@ -224,35 +261,75 @@ class cvpluginInit(octoprint.plugin.StartupPlugin,
             if os.path.isfile(file_path):
                 os.remove(file_path)
         #If the monitoring thread is not running, return
-        if not self._running:
+        if not self._flagsArray[1]:
             return
-        self._running = False
-        if self._thread:
-            self._thread.join()
-            self._thread = None
+        self._flagsArray[1] = False
+        if self._CVprocess:
+            self._CVprocess.join()
+            self._CVprocess = None
 
     def on_settings_save(self, data):
         if "discordWebhookUrl" in data.keys():
-            self._notificationsModule.discordSettings["webhookUrl"] = data["discordWebhookUrl"]
+            self._discordSettings["webhookUrl"] = data["discordWebhookUrl"]
         if "discordNotifications" in data.keys():
             if data["discordNotifications"]:
                 #If the discord webhook URL is not set, don't enable discord notifications
-                if not self._notificationsModule.discordSettings.get("webhookUrl"):
+                if not self._discordSettings.get("webhookUrl"):
                     self._logger.info("Discord webhook URL not set")
                     data["discordNotifications"] = False
+                    self._discordSettings["enabled"] = False
                 else:
                     self._logger.info("Discord notifications enabled")
-                    self._notificationsModule.destinations.append("discord")
+                    self._discordSettings["enabled"] = True
             else:
                 self._logger.info("Discord notifications disabled")
-                self._notificationsModule.destinations.remove("discord")
+                self._discordSettings["enabled"] = False
         if "telegramBotToken" in data.keys():
-            self._notificationsModule.telegramSettings["botToken"] = data["telegramBotToken"]
+            self._telegramSettings["botToken"] = data["telegramBotToken"]
         if "telegramChatId" in data.keys():
-            self._notificationsModule.telegramSettings["chatId"] = data["telegramChatId"]
+            if not self._telegramSettings.get("botToken"):
+                self._logger.info("Telegram bot token not set")
+                data["telegramChatId"] = ""
+                self._telegramSettings["chatId"] = ""
+            else:
+                self._telegramSettings["chatId"] = data["telegramChatId"]  
         if "telegramNotifications" in data.keys():
-            self._notificationsModule.destinations.append("telegram")
-
+            if data["telegramNotifications"]:
+                if self._telegramSettings.get("botToken") and self._telegramSettings.get("chatId"):
+                    self._telegramSettings["enabled"] = data["telegramNotifications"]
+                else:
+                    self._logger.info("Telegram bot token or chat ID not set")
+                    data["telegramNotifications"] = False
+                    self._telegramSettings["enabled"] = False
+            else:
+                self._telegramSettings["enabled"] = data["telegramNotifications"] 
+        if "selectedWebcam" in data.keys():
+            self._currentWebcam["name"] = data["selectedWebcam"]
+            if data["selectedWebcam"] == "classic":
+                webcam = self.get_current_webcam()
+                self._currentWebcam["streamUrl"] = webcam["streamUrl"]
+                self._currentWebcam["snapshotUrl"] = webcam["snapshotUrl"]
+            elif data["selectedWebcam"] == "cvprinting":
+                if "cvprintingStreamUrl" in data.keys():
+                    self._currentWebcam["streamUrl"] = data["cvprintingStreamUrl"]
+                else:
+                    self._currentWebcam["streamUrl"] = self._settings.get(["cvprintingStreamUrl"])
+                if "cvprintingSnapshotUrl" in data.keys():
+                    self._currentWebcam["snapshotUrl"] = data["cvprintingSnapshotUrl"]
+                else:
+                    self._currentWebcam["snapshotUrl"] = self._settings.get(["cvprintingSnapshotUrl"])
+        elif self._settings.get(["selectedWebcam"]) == "cvprinting":
+            if "cvprintingStreamUrl" in data.keys():
+                self._currentWebcam["streamUrl"] = data["cvprintingStreamUrl"]
+            if "cvprintingSnapshotUrl" in data.keys():
+                self._currentWebcam["snapshotUrl"] = data["cvprintingSnapshotUrl"]
+        if "pausePrintOnIssue" in data.keys():
+            self._flagsArray[0] = data["pausePrintOnIssue"]
+        if "pauseThreshold" in data.keys():
+            self._intArray[3] = data["pauseThreshold"]
+        if "warningThreshold" in data.keys():
+            self._intArray[4] = data["warningThreshold"]
+        print(self._currentWebcam.get("snapshotUrl"))
         #Save the new values to settings
         for key, value in data.items():
             self._settings.set([key], value)
@@ -262,30 +339,19 @@ class cvpluginInit(octoprint.plugin.StartupPlugin,
         #If the print is started, start monitoring
         if event == "PrintStarted":
             self._logger.info("Print started")
-            self._currentDetection = 0
-            self._lastConfidence = 0
             self.start_monitoring()
         #If the print is paused, stop monitoring
         if event == "PrintPaused":
             self._logger.info("Stopping monitoring")
             self.stop_monitoring()
-        #If the print is cancelled, failed or done, stop monitoring and reset the flags
+        #If the print is cancelled, failed or done, stop monitoring and reset pausedOnError
         if event == "PrintFailed" or event == "PrintDone" or event == "PrintCancelled":
             self._logger.info("Stopping monitoring")
             self.stop_monitoring()
-            self._pausedOnError = False
-            self._lastDetection = 0
-            self._lastPause = 0
-            self._currentDetection = 0
-            self._lastConfidence = 0
+            self._flagsArray[2] = False
         #If the print is resumed, start monitoring
         if event == "PrintResumed":
             self._logger.info("Print resumed")
-            #If the print was paused due to an error, reset the pause flag and update the last detection time to prevent repeated notifications and pauses on false positives
-            if self._pausedOnError:
-                self._pausedOnError = False
-                self._lastDetection = time.time()
-                self._lastPause = time.time()
             self.start_monitoring()
 
     def is_blueprint_csrf_protected(self):

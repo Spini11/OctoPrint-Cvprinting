@@ -17,8 +17,12 @@ class Notificationscvprinting:
         self.telegramSettings = notificationsConfig.get("telegram")
         if self.discordSettings.get("enabled"):
             self.destinations.append("discord")
+        elif "discord" in self.destinations:
+            self.destinations.remove("discord")
         if self.telegramSettings.get("enabled"):
             self.destinations.append("telegram")
+        elif "telegram" in self.destinations:
+            self.destinations.remove("telegram")
         self._logger = logger
             
         
@@ -63,7 +67,8 @@ class Notificationscvprinting:
         else:
             response = discord.post(embeds=embeds)
         if response.status_code not in [200, 204]:
-            self._logger.error(f"Error sending discord notification: {response.text}")
+            print(response.text)
+            #self._logger.error(f"Error sending discord notification: {response.text}")
             return 1
         return 0
 
@@ -88,6 +93,7 @@ class Notificationscvprinting:
             payload["text"] = payload["caption"]
             response = requests.post(url + "sendMessage", data=payload)
         if not response or response.status_code != 200:
-            self._logger.error(f"Error sending telegram notification: {response.text}")
+            print(response.text)
+            #self._logger.error(f"Error sending telegram notification: {response.text}")
             return 1
         return 0
