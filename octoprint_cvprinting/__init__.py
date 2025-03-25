@@ -371,19 +371,19 @@ class cvpluginInit(octoprint.plugin.StartupPlugin,
         return data
     
     def on_event(self,event, payload):
-        #If the print is started, start monitoring
+        #If new print is started, start monitoring and reset pausedOnError flag
         if event == "PrintStarted":
             self._logger.info("Print started")
+            self._flagsArray[2] = False
             self.start_monitoring()
         #If the print is paused, stop monitoring
         if event == "PrintPaused":
             self._logger.info("Stopping monitoring")
             self.stop_monitoring()
-        #If the print is cancelled, failed or done, stop monitoring and reset pausedOnError
+        #If the print is cancelled, failed or done, stop monitoring
         if event == "PrintFailed" or event == "PrintDone" or event == "PrintCancelled":
             self._logger.info("Stopping monitoring")
             self.stop_monitoring()
-            self._flagsArray[2] = False
         #If the print is resumed, start monitoring
         if event == "PrintResumed":
             self._logger.info("Print resumed")
