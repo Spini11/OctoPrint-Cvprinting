@@ -101,14 +101,17 @@ $(function(){
             self.settings.settings.plugins.cvprinting.cvprintingSnapshotUrl(self.cvprintingSnapshotUrl());
             self.settings.settings.plugins.cvprinting.cvprintingStreamUrl(self.cvprintingStreamUrl());
             if (self.telegramToken() === ""){
+                console.log("Telegram token is empty");
                 self.telegramConnected(false);
                 self.telegramEnabled(false);
                 self.settings.settings.plugins.cvprinting.telegramChatId("");
             }
             if(document.getElementById("telegramChatIdField").value !== ""){
+                console.log("Telegram chat id is not empty");
                 self.settings.settings.plugins.cvprinting.telegramChatId(document.getElementById("telegramChatIdField").value);
             }
-            else{
+            else if (document.getElementById("selectedChatId").value === ""){
+                console.log("Telegram chat id is empty");
                 self.settings.settings.plugins.cvprinting.telegramChatId("");
                 self.telegramConnected(false);
                 self.telegramEnabled(false);
