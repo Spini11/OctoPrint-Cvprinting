@@ -340,9 +340,11 @@ class cvpluginInit(octoprint.plugin.StartupPlugin,
         if "selectedWebcam" in data.keys():
             self._currentWebcam["name"] = data["selectedWebcam"]
             if data["selectedWebcam"] == "classic":
-                webcam = self.get_current_webcam()
-                self._currentWebcam["streamUrl"] = webcam["streamUrl"]
-                self._currentWebcam["snapshotUrl"] = webcam["snapshotUrl"]
+                webcams = self.get_webcam_list()
+                for webcam in webcams:
+                    if webcam["name"] == "classic":
+                        self._currentWebcam["streamUrl"] = webcam["streamUrl"]
+                        self._currentWebcam["snapshotUrl"] = webcam["snapshotUrl"]
             elif data["selectedWebcam"] == "cvprinting":
                 if "cvprintingStreamUrl" in data.keys():
                     self._currentWebcam["streamUrl"] = data["cvprintingStreamUrl"]
