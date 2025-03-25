@@ -6,33 +6,49 @@ class Notificationscvprinting:
     destinations = []
     discordSettings = {}
     telegramSettings = {}
-    _warningTemplate = "CVPrinting has detected possible {label} with confidence {conf} which triggered a warning"
-    _errorTemplate = "CVPrinting has detected possible {label} with confidence {conf} which triggered a printer PAUSE"
+    _warningTemplate = "CVPrinting has detected possible {label} with confidence {conf:.0f} which triggered a warning"
+    _errorTemplate = "CVPrinting has detected possible {label} with confidence {conf:.0f} which triggered a printer PAUSE"
     _testTemplate = "This is a test notification"
     _main = None
     _logger = None
 
     def __init__(self, notificationsConfig, logger):
-        self.discordSettings = notificationsConfig.get("discord")
-        self.telegramSettings = notificationsConfig.get("telegram")
-        if self.discordSettings.get("enabled"):
-            self.destinations.append("discord")
-        if self.telegramSettings.get("enabled"):
-            self.destinations.append("telegram")
+        if notificationsConfig:
+            self.discordSettings = notificationsConfig.get("discord")
+            self.telegramSettings = notificationsConfig.get("telegram")
+            if self.discordSettings.get("enabled"):
+                self.destinations.append("discord")
+            elif "discord" in self.destinations:
+                self.destinations.remove("discord")
+            if self.telegramSettings.get("enabled"):
+                self.destinations.append("telegram")
+            elif "telegram" in self.destinations:
+                self.destinations.remove("telegram")
         self._logger = logger
             
         
 
     def notify(self, type, data):
+        response = []
         if type == "Test":
             if data.get("target") == "discord":
-                return self.notify_discord("Test", data)
+                code, message = self.notify_discord("Test", data)
+                if code != 0:
+                    self._logger.info(message)
             elif data.get("target") == "telegram":
-                return self.notify_telegram("Test", data)
+                code, message = self.notify_telegram("Test", data)
+                if code != 0:
+                    self._logger.info(message)
+            return
         if "discord" in self.destinations:
-            return self.notify_discord(type, data)
+            code, message = self.notify_discord(type, data)
+            if code != 0:
+                response.append(message)
         if "telegram" in self.destinations:
-            return self.notify_telegram(type, data)
+            code, message = self.notify_telegram(type, data)    
+            if code != 0:
+                response.append(message)
+        return response
     
     def notify_discord(self, type, data):
         file = None
@@ -63,9 +79,8 @@ class Notificationscvprinting:
         else:
             response = discord.post(embeds=embeds)
         if response.status_code not in [200, 204]:
-            self._logger.error(f"Error sending discord notification: {response.text}")
-            return 1
-        return 0
+            return 1, f"Error sending discord notification: {response.text}"
+        return 0, None
 
     def notify_telegram(self, type, data):
         botToken = self.telegramSettings.get("botToken")
@@ -88,6 +103,6 @@ class Notificationscvprinting:
             payload["text"] = payload["caption"]
             response = requests.post(url + "sendMessage", data=payload)
         if not response or response.status_code != 200:
-            self._logger.error(f"Error sending telegram notification: {response.text}")
-            return 1
-        return 0
+            print(response.text)
+            return 1, f"Error sending telegram notification: {response.text}"
+        return 0, None
