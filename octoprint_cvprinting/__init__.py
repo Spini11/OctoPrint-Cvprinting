@@ -153,7 +153,7 @@ class cvpluginInit(octoprint.plugin.StartupPlugin,
     def start_monitoring(self):
         #If the monitoring thread is already running, return
         if self._flagsArray[1]:
-            print("Monitoring already running")
+            self._logger.debug("Monitoring already running")
             return
         #Delete all images in the folder before starting monitoring
         for filename in os.listdir(os.path.join(self._basefolder, 'data/images/')):
@@ -166,18 +166,18 @@ class cvpluginInit(octoprint.plugin.StartupPlugin,
             self._queueListener = threading.Thread(target=self.queue_listener, args=(self._queue,))
             self._queueListener.daemon = True
             self._queueListener.start()
-            print("Queue listener started")
+            self._logger.debug("Queue listener started")
             if self._CVprocess:
-                print("CV process already running")
-            print("Starting monitoring")
+                self._logger.debug("CV process already running")
+            self._logger.debug("Starting monitoring")
             self._CVprocess = multiprocessing.Process(target=self.monitor, args=(self._currentWebcam, self._basefolder, self._discordSettings, self._telegramSettings, self._floatArray, self._flagsArray, self._queue,))
             self._CVprocess.start()
-            print("Monitoring started")
+            self._logger.debug("Monitoring started")
 
     #queue implementation to send messages to the main thread, used for logging and pausing the print
     def queue_listener(self, queue):
-        print("Queue listener starting")
-        print(self._flagsArray[1])
+        self._logger.debug("Queue listener starting")
+        self._logger.debug(self._flagsArray[1])
         while self._flagsArray[1]:
             msg_type, data = queue.get()
             if msg_type == "EXIT":
@@ -191,6 +191,8 @@ class cvpluginInit(octoprint.plugin.StartupPlugin,
                 self._logger.info(data)
             elif msg_type == "ERROR":
                 self._logger.error(data)
+            elif msg_type == "DEBUG":
+                self._logger.debug(data)
                                         
     def monitor(self, webcam, basefolder, discordSettings, telegramSettings, intArray, flagsArray, queue):
         intArray[2] = 0 #currentConfidence
@@ -203,15 +205,15 @@ class cvpluginInit(octoprint.plugin.StartupPlugin,
             intArray[1] = 0 #lastDetectionTime
         flagsArray[2] = False #pausedOnError
         notificationsconfig = {"discord": discordSettings, "telegram": telegramSettings}
-        print("Initializing notifications module")
+        queue.put(("DEBUG", "Initializing notifications module"))
         notificationsModule = notifications.Notificationscvprinting(notificationsconfig,  None)
-        print("Initializing vision module")
+        queue.put(("DEBUG", "Initializing vision module"))
         visionModuleInstance = visionModule.visionModule(basefolder)
         lastConfidence = 0
         #flagsArray[1] is the running flag
         while flagsArray[1]:
             #Update the notifications module with the new settings
-            print(discordSettings)
+            queue.put(("DEBUG", discordSettings))
             notificationsconfig = {"discord": discordSettings, "telegram": telegramSettings}
             notificationsModule = notifications.Notificationscvprinting(notificationsconfig,  None)
             if not webcam:
@@ -220,12 +222,10 @@ class cvpluginInit(octoprint.plugin.StartupPlugin,
                 continue
             image, result = visionModuleInstance.CheckImage(webcam.get("snapshotUrl"))
             if result == 1:
-                print("Error getting image")
                 queue.put(("ERROR", "Error getting image"))
                 time.sleep(5)
                 continue
             if result == 2:
-                print("Error processing image")
                 queue.put(("ERROR", "Error processing image"))
                 time.sleep(5)
                 continue
@@ -238,19 +238,19 @@ class cvpluginInit(octoprint.plugin.StartupPlugin,
                 continue
             intArray[2] = result.get("conf")
             #intArray[3] is the pause threshold, flagsArray[0] is the pauseOnError flag
-            print("curr conf" + str(intArray[2]))
-            print("pause threshold" + str(intArray[3]))
-            print("pause flag" + str(flagsArray[0]))
+            queue.put(("DEBUG", "curr conf" + str(intArray[2])))
+            queue.put(("DEBUG", "pause threshold" + str(intArray[3])))
+            queue.put(("DEBUG", "pause flag" + str(flagsArray[0])))
             if intArray[2] > intArray[3] and flagsArray[0]:
-                print("first if passsed")
+                queue.put(("DEBUG", "first if passsed"))
                 if lastConfidence < intArray[3]:
-                    print("second if passed")
+                    queue.put(("DEBUG", "second if passed"))
                     os.remove(image)
                     time.sleep(1)
                     continue
                 #intArray[0] is the last pause time
                 if (intArray[0] + 10*60) < time.time():
-                    print("time if passed")
+                    queue.put(("DEBUG", "time if passed"))
                     intArray[0] = time.time()
                     response = notificationsModule.notify("Error", {"image": image, "conf": intArray[2], "label": result.get("label")})
                     if response:
@@ -281,17 +281,17 @@ class cvpluginInit(octoprint.plugin.StartupPlugin,
         self._flagsArray[1] = False
         if self._CVprocess:
             self._CVprocess.join()
-            print("CV process exited")
+            self._logger.debug("CV process exited")
             self._CVprocess = None
         else:
-            print("CV process already exited")
+            self._logger.debug("CV process already exited")
         if self._queueListener:
             self._queue.put(("EXIT", None))
             self._queueListener.join()
-            print("Queue listener exited")
+            self._logger.debug("Queue listener exited")
             self._queueListener = None
         else:
-            print("Queue listener already exited")
+            self._logger.debug("Queue listener already exited")
         for filename in os.listdir(os.path.join(self._basefolder, 'data/images/')):
             file_path = os.path.join(os.path.join(self._basefolder, 'data/images/'), filename)
             if os.path.isfile(file_path):
@@ -304,8 +304,8 @@ class cvpluginInit(octoprint.plugin.StartupPlugin,
         if "discordWebhookUrl" in data.keys():
             self._discordSettings["webhookUrl"] = data["discordWebhookUrl"]
         if "discordNotifications" in data.keys():
-            print("discordNotifications in data")
-            print(data["discordNotifications"])
+            self._logger.debug("discordNotifications in data")
+            self._logger.debug(data["discordNotifications"])
             if data["discordNotifications"]:
                 #If the discord webhook URL is not set, don't enable discord notifications
                 if not self._discordSettings.get("webhookUrl"):
