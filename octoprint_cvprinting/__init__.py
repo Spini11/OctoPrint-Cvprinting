@@ -28,6 +28,8 @@ class cvpluginInit(octoprint.plugin.StartupPlugin,
     _CVprocess = None
     _queueListener = None
 
+    _queue = None
+
     #Need to be passed into the cv process
 
     #lastPauseTime = 0, lastDetectionTime = 1, currentConfidence = 2, pauseThreshold = 3, warningThreshold = 4
@@ -160,24 +162,15 @@ class cvpluginInit(octoprint.plugin.StartupPlugin,
                 os.remove(file_path)
         with multiprocessing.Manager() as manager:  
             self._flagsArray[1] = True
-            queue = multiprocessing.Queue()
-            self._queueListener = threading.Thread(target=self.queue_listener, args=(queue,))
+            self._queue = multiprocessing.Queue()
+            self._queueListener = threading.Thread(target=self.queue_listener, args=(self._queue,))
             self._queueListener.daemon = True
             self._queueListener.start()
             print("Queue listener started")
-
-            #TODO: Remove this tmp settings update
-            # webcamTmp = self.get_current_webcam()
-            # self._currentWebcam["name"] = webcamTmp["name"]
-            # self._currentWebcam["streamUrl"] = webcamTmp["streamUrl"]
-            # self._currentWebcam["snapshotUrl"] = webcamTmp["snapshotUrl"]
-            # self._floatArray[3] = int(self._settings.get(["pauseThreshold"]))
-            # self._floatArray[4] = int(self._settings.get(["warningThreshold"]))
-            # self._flagsArray[0] = self._settings.get(["pausePrintOnIssue"])
             if self._CVprocess:
                 print("CV process already running")
             print("Starting monitoring")
-            self._CVprocess = multiprocessing.Process(target=self.monitor, args=(self._currentWebcam, self._basefolder, self._discordSettings, self._telegramSettings, self._floatArray, self._flagsArray, queue,))
+            self._CVprocess = multiprocessing.Process(target=self.monitor, args=(self._currentWebcam, self._basefolder, self._discordSettings, self._telegramSettings, self._floatArray, self._flagsArray, self._queue,))
             self._CVprocess.start()
             print("Monitoring started")
 
@@ -293,6 +286,7 @@ class cvpluginInit(octoprint.plugin.StartupPlugin,
         else:
             print("CV process already exited")
         if self._queueListener:
+            self._queue.put(("EXIT", None))
             self._queueListener.join()
             print("Queue listener exited")
             self._queueListener = None
@@ -305,6 +299,8 @@ class cvpluginInit(octoprint.plugin.StartupPlugin,
 
 
     def on_settings_save(self, data):
+        for key, value in data.items():
+            print (key, value)
         if "discordWebhookUrl" in data.keys():
             self._discordSettings["webhookUrl"] = data["discordWebhookUrl"]
         if "discordNotifications" in data.keys():
