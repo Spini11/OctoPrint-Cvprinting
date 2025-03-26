@@ -121,6 +121,15 @@
                 style="flex: 2; max-width: 300px; padding: 5px; border: 1px solid #ccc; border-radius: 4px;" 
                 data-bind="value: webhookUrl">
         </div>
+        <div class="control-group" style="display: flex; flex-direction: column; align-items: flex-start; gap: 5px; margin-top: 10px;">
+            <button type="button" id="discord_test" 
+                style="padding: 5px 10px;" 
+                data-bind="click: sendDiscordTest, enable: webhookUrl()">
+                Send Test Notification to Discord
+            </button>
+            <p style="color: red; font-size: 0.9em;" data-bind="visible: discordTestNotificationError, text: discordTestNotificationMessage"></p>
+            <p style="color: green; font-size: 0.9em;" data-bind="visible: discordTestNotificationMessageShow, text: discordTestNotificationMessage"></p>
+        </div>
                 
         <label class="notificationsLabel" style="font-weight: bold; font-size: 1em; display: block; margin-top: 20px;">Telegram</label>
         <div class="control-group" style="display: flex; align-items: center; gap: 10px;">
@@ -150,6 +159,15 @@
         <div id="telegramConnection" class="control-group" style="display: flex; align-items: center; gap: 10px;" data-bind="visible: telegramConnecting() || telegramShowFoundChats()">
             <label for="telegramChatIdLabel" class="TelegramChatIdLabel" style="flex: 1;">Chat ID</label>
             <select id="telegramChatIdField" style="flex: 2; max-width: 300px; padding: 5px; border: 1px solid #ccc; border-radius: 4px;" data-bind="value: telegramChatIdFieldValue"></select>
+        </div>
+        <div class="control-group" style="display: flex; flex-direction: column; align-items: flex-start; gap: 5px; margin-top: 10px;">
+            <button type="button" id="telegram_test" 
+                style="padding: 5px 10px;" 
+                data-bind="click: sendTelegramTest, enable: telegramToken() && (telegramChatId() || telegramChatIdFieldValue())">
+                Send Test Notification to Telegram
+            </button>
+            <p style="color: red; font-size: 0.9em;" data-bind="visible: telegramTestNotificationError, text: telegramTestNotificationMessage"></p>
+            <p style="color: green; font-size: 0.9em;" data-bind="visible: telegramTestNotificationMessageShow, text: telegramTestNotificationMessage"></p>
         </div>
     </form>
 </div>
