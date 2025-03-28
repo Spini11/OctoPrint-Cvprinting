@@ -133,6 +133,70 @@ class cvpluginInit(octoprint.plugin.StartupPlugin,
             return jsonify({"message": "Notification sent"}), 200
         else:
             return jsonify({"message": "Error sending notification, verify inputted data"}), 400
+    
+    #API endpoint for obtaining current settings
+    @octoprint.plugin.BlueprintPlugin.route("/get_settings", methods=["POST"])
+    def get_settings(self):
+        settings = dict()
+        settings["pausePrintOnIssue"] = self._settings.get(["pausePrintOnIssue"])
+        settings["pauseThreshold"] = self._settings.get(["pauseThreshold"])
+        settings["warningThreshold"] = self._settings.get(["warningThreshold"])
+        settings["cvprintingSnapshotUrl"] = self._settings.get(["cvprintingSnapshotUrl"])
+        settings["cvprintingStreamUrl"] = self._settings.get(["cvprintingStreamUrl"])
+        settings["selectedWebcam"] = self._settings.get(["selectedWebcam"])
+        settings["cvEnabled"] = self._settings.get(["cvEnabled"])
+        settings["discordNotifications"] = self._settings.get(["discordNotifications"])
+        settings["discordWebhookUrl"] = self._settings.get(["discordWebhookUrl"])
+        settings["telegramNotifications"] = self._settings.get(["telegramNotifications"])
+        settings["telegramBotToken"] = self._settings.get(["telegramBotToken"])
+        settings["telegramChatId"] = self._settings.get(["telegramChatId"])
+
+        return jsonify(settings)
+    
+    #API endpoint for updating settings
+    @octoprint.plugin.BlueprintPlugin.route("/update_settings", methods=["POST"])
+    def update_settings(self):
+        data = flask.request.get_json()
+        if not data:
+            return jsonify({"message": "Error: No data received"}), 400
+        for key, value in data.items():
+            if key == "pausePrintOnIssue":
+                if not isinstance(value, bool):
+                    return jsonify({"message": "Error: Invalid value for pausePrintOnIssue"}), 400
+                self._settings.set_boolean(["pausePrintOnIssue"], value)
+            elif key == "pauseThreshold":
+                if not isinstance(value, int):
+                    return jsonify({"message": "Error: Invalid value for pauseThreshold"}), 400
+                if value < 0 or value > 100:
+                    return jsonify({"message": "Error: Invalid value for pauseThreshold"}), 400
+                self._settings.set_int(["pauseThreshold"], value)
+            elif key == "warningThreshold":
+                if not isinstance(value, int):
+                    return jsonify({"message": "Error: Invalid value for warningThreshold"}), 400
+                if value < 0 or value > 100:
+                    return jsonify({"message": "Error: Invalid value for warningThreshold"}), 400
+                self._settings.set_int(["warningThreshold"], value)
+            elif key == "cvprintingSnapshotUrl":
+                if not isinstance(value, str):
+                    return jsonify({"message": "Error: Invalid value for cvprintingSnapshotUrl"}), 400
+                self._settings.set(["cvprintingSnapshotUrl"], value)
+            elif key == "cvprintingStreamUrl":
+                if not isinstance(value, str):
+                    return jsonify({"message": "Error: Invalid value for cvprintingStreamUrl"}), 400
+                self._settings.set(["cvprintingStreamUrl"], value)
+            elif key == "selectedWebcam":
+                if not isinstance(value, str):
+                    return jsonify({"message": "Error: Invalid value for selectedWebcam"}), 400
+                if value not in ["classic", "cvprinting"]:
+                    return jsonify({"message": "Error: Invalid value for selectedWebcam"}), 400
+                self._settings.set(["selectedWebcam"], value)
+            elif key == "cvEnabled":
+                if not isinstance(value, bool):
+                    return jsonify({"message": "Error: Invalid value for cvEnabled"}), 400
+                self._settings.set_boolean(["cvEnabled"], value)
+            #TODO: Add notifications settings with input validation
+        self._settings.save()
+        return jsonify({"message": "Settings updated"}), 200
             
     
     def get_template_vars(self):
