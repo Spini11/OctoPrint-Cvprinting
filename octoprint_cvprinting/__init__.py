@@ -251,7 +251,12 @@ class cvpluginInit(octoprint.plugin.StartupPlugin,
             self._logger.debug(data["discordNotifications"])
         for key, value in data.items():
             self._settings.set([key], value)
-
+        if "selectedWebcam" in data.keys() and data["selectedWebcam"] != self._settings.get(["selectedWebcam"]):
+            self.stop_monitoring()
+            self.start_monitoring()
+        elif self._settings.get(["selectedWebcam"]) == "cvprinting" and "cvprintingSnapshotUrl" in data.keys() and "cvprintingStreamUrl" in data.keys():
+            self.stop_monitoring()
+            self.start_monitoring()
         return data
     
     def on_event(self,event, payload):
