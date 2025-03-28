@@ -10,6 +10,10 @@
     <label class="settingsLabel" style="font-weight: bold; font-size: 1.2em; display: block; margin-bottom: 15px;">Settings</label>
     <form class="form-horizontal" style="display: flex; flex-direction: column; gap: 20px;">
         <div class="control-group">
+            <label class="EnableCVPrintingLabel" style="display: block; margin-bottom: 5px;">Enable computer vision for detecting issues</label>
+            <input type="checkbox" id="cvprinting_enabled" data-bind="checked: cvprintingEnabled">
+        </div>
+        <div class="control-group">
             <label class="PauseIssueSettingsLabel" style="display: block; margin-bottom: 5px;">Pause print when issue is detected</label>
             <input type="checkbox" id="pause_on_issue" data-bind="checked: pauseOnError">
         </div>

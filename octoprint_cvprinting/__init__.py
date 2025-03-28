@@ -249,6 +249,14 @@ class cvpluginInit(octoprint.plugin.StartupPlugin,
         if "discordNotifications" in data.keys():
             self._logger.debug("discordNotifications in data")
             self._logger.debug(data["discordNotifications"])
+            #if print in progress and cvEnabled = true in data.keys
+        if self._printer.is_printing() and "cvEnabled" in data.keys():
+            if not data["cvEnabled"]:
+                self._logger.debug("cv was disabled while printing")
+                self.stop_monitoring()
+            elif data["cvEnabled"]:
+                self._logger.debug("cv was enabled while printing")
+                self.start_monitoring()
         for key, value in data.items():
             self._settings.set([key], value)
         if "selectedWebcam" in data.keys() and data["selectedWebcam"] != self._settings.get(["selectedWebcam"]):
@@ -262,6 +270,8 @@ class cvpluginInit(octoprint.plugin.StartupPlugin,
     def on_event(self,event, payload):
         #If new print is started, start monitoring and reset pausedOnError flag
         if event == "PrintStarted":
+            if not self._settings.get(["cvEnabled"]):
+                return
             self._currentConfidence = 0
             self._pausedOnError = False
             self._logger.info("Print started")
@@ -276,6 +286,8 @@ class cvpluginInit(octoprint.plugin.StartupPlugin,
             self.stop_monitoring()
         #If the print is resumed, start monitoring
         if event == "PrintResumed":
+            if not self._settings.get(["cvEnabled"]):
+                return
             self._logger.info("Print resumed")
             self.start_monitoring()
 
