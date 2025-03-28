@@ -222,7 +222,6 @@ class cvpluginInit(octoprint.plugin.StartupPlugin,
         if self._CVprocess and self._CVprocess.is_alive():
             self._logger.debug("process is alive")
             print(multiprocessing.active_children())
-            #self._CVprocess.terminate()
             self._CVprocess.join()
             self._logger.debug("CV process exited")
             self._CVprocess = None
@@ -241,8 +240,6 @@ class cvpluginInit(octoprint.plugin.StartupPlugin,
             if os.path.isfile(file_path):
                 os.remove(file_path)
 
-
-    #TODO: On camera update restart monitoring
     def on_settings_save(self, data):
         for key, value in data.items():
             print (key, value)
