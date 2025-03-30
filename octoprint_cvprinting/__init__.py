@@ -345,8 +345,6 @@ class cvpluginInit(octoprint.plugin.StartupPlugin,
         for key, value in data.items():
             if key != "discordNotifications" and key != "telegramNotifications":
                 self._settings.set([key], value)
-        # enableDiscord = False
-        # enableTelegram = False
         if "discordNotifications" in data.keys():
             if data["discordNotifications"]:
                 if self._settings.get("discordWebhookUrl"):
