@@ -11,20 +11,28 @@ class Notificationscvprinting:
     _testTemplate = "This is a test notification"
     _main = None
     _logger = None
+    _settings = None
 
-    def __init__(self, notificationsConfig, logger):
-        if notificationsConfig:
-            self.discordSettings = notificationsConfig.get("discord")
-            self.telegramSettings = notificationsConfig.get("telegram")
-            if self.discordSettings.get("enabled"):
-                self.destinations.append("discord")
-            elif "discord" in self.destinations:
-                self.destinations.remove("discord")
-            if self.telegramSettings.get("enabled"):
-                self.destinations.append("telegram")
-            elif "telegram" in self.destinations:
-                self.destinations.remove("telegram")
+    def __init__(self, settings, logger):
+        self._settings = settings
         self._logger = logger
+
+    def getConfig(self):
+        if self._settings.get(["discordNotifications"]):
+            if not "discord" in self.destinations:
+                self.destinations.append("discord")
+        else:
+            if "discord" in self.destinations:
+                self.destinations.remove("discord")
+        if self._settings.get(["telegramNotifications"]):
+            if not "telegram" in self.destinations:
+                self.destinations.append("telegram")
+        else:
+            if "telegram" in self.destinations:
+                self.destinations.remove("telegram")
+        self.discordSettings["webhookUrl"] = self._settings.get(["discordWebhookUrl"])
+        self.telegramSettings["botToken"] = self._settings.get(["telegramBotToken"])
+        self.telegramSettings["chatId"] = self._settings.get(["telegramChatId"])
             
         
 
@@ -40,6 +48,7 @@ class Notificationscvprinting:
                 if code != 0:
                     self._logger.info(message)
             return
+        self.getConfig()
         if "discord" in self.destinations:
             code, message = self.notify_discord(type, data)
             if code != 0:
@@ -79,6 +88,7 @@ class Notificationscvprinting:
         else:
             response = discord.post(embeds=embeds)
         if response.status_code not in [200, 204]:
+            self._logger.info(f"Error sending discord notification: {response.status_code} {response.text}")
             return 1, f"Error sending discord notification: {response.text}"
         return 0, None
 
@@ -103,6 +113,6 @@ class Notificationscvprinting:
             payload["text"] = payload["caption"]
             response = requests.post(url + "sendMessage", data=payload)
         if not response or response.status_code != 200:
-            print(response.text)
+            self._logger.info(f"Error sending telegram notification: {response.status_code} {response.text}")
             return 1, f"Error sending telegram notification: {response.text}"
         return 0, None

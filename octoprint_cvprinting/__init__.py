@@ -44,18 +44,7 @@ class cvpluginInit(octoprint.plugin.StartupPlugin,
         self._logger.info("CVPrinting started")
         multiprocessing.set_start_method('spawn', force=True)
         self._running = multiprocessing.Value('b', False)
-        notif_config = {
-            "discord": {
-                "enabled": self._settings.get(["discordNotifications"]),
-                "webhookUrl": self._settings.get(["discordWebhookUrl"]),
-            },
-            "telegram": {
-                "enabled": self._settings.get(["telegramNotifications"]),
-                "botToken": self._settings.get(["telegramBotToken"]),
-                "chatId": self._settings.get(["telegramChatId"]),
-            }
-        }
-        self._notificationsModule = notifications.Notificationscvprinting(notif_config, self._logger)
+        self._notificationsModule = notifications.Notificationscvprinting(self._settings, self._logger)
         #Create folder for storing images
         os.makedirs(os.path.join(self._basefolder, 'data/images'), exist_ok=True)
 
@@ -345,11 +334,7 @@ class cvpluginInit(octoprint.plugin.StartupPlugin,
 
     def on_settings_save(self, data):
         for key, value in data.items():
-            print (key, value)
-        if "discordNotifications" in data.keys():
-            self._logger.debug("discordNotifications in data")
-            self._logger.debug(data["discordNotifications"])
-            #if print in progress and cvEnabled = true in data.keys
+            print (key, value) 
         if self._printer.is_printing() and "cvEnabled" in data.keys():
             if not data["cvEnabled"]:
                 self._logger.debug("cv was disabled while printing")
@@ -358,7 +343,28 @@ class cvpluginInit(octoprint.plugin.StartupPlugin,
                 self._logger.debug("cv was enabled while printing")
                 self.start_monitoring()
         for key, value in data.items():
-            self._settings.set([key], value)
+            if key != "discordNotifications" and key != "telegramNotifications":
+                self._settings.set([key], value)
+        # enableDiscord = False
+        # enableTelegram = False
+        if "discordNotifications" in data.keys():
+            if data["discordNotifications"]:
+                if self._settings.get("discordWebhookUrl"):
+                    self._settings.set(["discordNotifications"], True)
+                else:
+                    self._logger.info("Disabling discord notifications, no webhook URL found")
+                    self._settings.set(["discordNotifications"], False)
+            else:
+                self._settings.set(["discordNotifications"], False)
+        if "telegramNotifications" in data.keys():
+            if data["telegramNotifications"]:
+                if self._settings.get("telegramBotToken") and self._settings.get("telegramChatId"):
+                    self._settings.set(["telegramNotifications"], True)
+                else:
+                    self._logger.info("Disabling telegram notifications, no bot token or chat ID found")
+                    self._settings.set(["telegramNotifications"], False)
+            else:
+                self._settings.set(["telegramNotifications"], False)
         if "selectedWebcam" in data.keys() and self._printer.is_printing() and self._settings.get(["cvEnabled"]):
             if not self._webcam:
                 return
