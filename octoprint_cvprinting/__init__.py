@@ -279,12 +279,13 @@ class cvpluginInit(octoprint.plugin.StartupPlugin,
             elif msg_type == "DEBUG":
                 self._logger.debug(data.get("message"))
             elif msg_type == "RESULT":
-                if data == None:
-                    firstDetection = False
-                    self._currentConfidence = 0
-                    continue
                 image = data.get("image")
                 result = data.get("result")
+                if result == None:
+                    firstDetection = False
+                    self._currentConfidence = 0
+                    os.remove(image)
+                    continue
                 self._currentConfidence = int(result.get("conf"))
                 if int(result.get("conf")) > int(self._settings.get(["pauseThreshold"])) and self._settings.get(["pausePrintOnIssue"]):
                     if not firstDetection:
@@ -346,13 +347,17 @@ class cvpluginInit(octoprint.plugin.StartupPlugin,
                 self.start_monitoring()
         for key, value in data.items():
             self._settings.set([key], value)
-        if "selectedWebcam" in data.keys():
+        if "selectedWebcam" in data.keys() and self._printer.is_printing() and self._settings.get(["cvEnabled"]):
+            if not self._webcam:
+                return
             if data["selectedWebcam"] != self._webcam["name"]:
                 webcam = self.get_current_webcam()
                 self._webcam["name"] = webcam["name"]
                 self._webcam["streamUrl"] = webcam["streamUrl"]
                 self._webcam["snapshotUrl"] = webcam["snapshotUrl"]
-        if self._settings.get(["selectedWebcam"]) == "cvprinting":
+        if self._settings.get(["selectedWebcam"]) == "cvprinting" and self._printer.is_printing() and self._settings.get(["cvEnabled"]):
+            if not self._webcam:
+                return
             if "cvprintingStreamUrl" in data.keys():
                 self._webcam["streamUrl"] = data["cvprintingStreamUrl"]
             if "cvprintingSnapshotUrl" in data.keys():
