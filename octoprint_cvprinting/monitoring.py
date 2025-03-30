@@ -24,7 +24,7 @@ class Monitoring:
             elif result == 2:
                 self._queue.put(("ERROR", {"message": "Error loading image"}))
             elif not result:
-                self._queue.put(("RESULT", None))
+                self._queue.put(("RESULT", {"image": image, "result": None}))
             else:
                 self._queue.put(("RESULT", {"image": image, "result": result}))
             time.sleep(1)

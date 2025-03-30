@@ -71,7 +71,23 @@ class visionModule:
     def getImage(self, url):
         tmpImageLocation = os.path.join(self.folder,f'images/{str(uuid.uuid4())}.png')
         imageLocation = os.path.join(self.folder,f'images/{str(uuid.uuid4())}.jpg')
-        response = requests.get(url)
+        try:
+            response = requests.get(url)
+        except requests.exceptions.RequestException as e:
+            print(f"Error fetching image: {e}")
+            return None
+        except requests.exceptions.ConnectionError:
+            print("Connection error occurred.")
+            return None
+        except requests.exceptions.Timeout:
+            print("Request timed out.")
+            return None
+        except requests.exceptions.TooManyRedirects:
+            print("Too many redirects.")
+            return None
+        except requests.exceptions.HTTPError:
+            print("HTTP error occurred.")
+            return None
         if response.status_code == 200:
             try:
                 with open(tmpImageLocation, 'wb') as f:
