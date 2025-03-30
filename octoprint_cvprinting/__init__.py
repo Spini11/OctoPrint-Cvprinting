@@ -35,6 +35,7 @@ class cvpluginInit(octoprint.plugin.StartupPlugin,
     _running = None
     _pausedOnError = False
     _currentConfidence = 0
+    _webcam = None
 
     _lastPauseTime = 0
 
@@ -164,11 +165,11 @@ class cvpluginInit(octoprint.plugin.StartupPlugin,
                 return jsonify({"message": "Error: Invalid value for pausePrintOnIssue"}), 400
             self._settings.set(["pausePrintOnIssue"], data["pausePrintOnIssue"])
         if "pauseThreshold" in data.keys():
-            if not isinstance(data["pauseThreshold"], int) && not isinstance(data["pauseThreshold"], float):
+            if not isinstance(data["pauseThreshold"], int) and not isinstance(data["pauseThreshold"], float):
                 return jsonify({"message": "Error: Invalid value for pauseThreshold"}), 400
             self._settings.set(["pauseThreshold"], int(data["pauseThreshold"]))
         if "warningThreshold" in data.keys():
-            if not isinstance(data["warningThreshold"], int) && not isinstance(data["warningThreshold"], float):
+            if not isinstance(data["warningThreshold"], int) and not isinstance(data["warningThreshold"], float):
                 return jsonify({"message": "Error: Invalid value for warningThreshold"}), 400
             self._settings.set(["warningThreshold"], int(data["warningThreshold"]))
         #TODO: On webcam update, update the data for monitoring process
@@ -217,9 +218,6 @@ class cvpluginInit(octoprint.plugin.StartupPlugin,
             if not self._settings.get(["telegramChatId"]):
                 return jsonify({"message": "Error: No chat ID found. Can't enable notifications"}), 400
             self._settings.set(["telegramNotifications"], data["telegramNotifications"])
-        
-
-        
         return jsonify({"message": "Settings updated"}), 200
             
     
@@ -248,9 +246,13 @@ class cvpluginInit(octoprint.plugin.StartupPlugin,
         if self._CVprocess:
             self._logger.debug("CV process already running")
         self._logger.debug("Starting monitoring")
+        self._webcam = multiprocessing.Manager().dict()
         webcam = self.get_current_webcam()
+        self._webcam["name"] = webcam["name"]
+        self._webcam["streamUrl"] = webcam["streamUrl"]
+        self._webcam["snapshotUrl"] = webcam["snapshotUrl"]
         baseFolder = self._basefolder
-        self._CVprocess = multiprocessing.Process(target=Monitoring.Monitoring, kwargs={'queue': self._queue, "baseFolder" : baseFolder, "webcam" : webcam, "running" : self._running}, name="CVProcess")
+        self._CVprocess = multiprocessing.Process(target=Monitoring.Monitoring, kwargs={'queue': self._queue, "baseFolder" : baseFolder, "webcam" : self._webcam, "running" : self._running}, name="CVProcess")
         self._CVprocess.daemon = True
         self._CVprocess.start()
         self._logger.debug("Monitoring started")
@@ -344,12 +346,17 @@ class cvpluginInit(octoprint.plugin.StartupPlugin,
                 self.start_monitoring()
         for key, value in data.items():
             self._settings.set([key], value)
-        if "selectedWebcam" in data.keys() and data["selectedWebcam"] != self._settings.get(["selectedWebcam"]):
-            self.stop_monitoring()
-            self.start_monitoring()
-        elif self._settings.get(["selectedWebcam"]) == "cvprinting" and "cvprintingSnapshotUrl" in data.keys() and "cvprintingStreamUrl" in data.keys():
-            self.stop_monitoring()
-            self.start_monitoring()
+        if "selectedWebcam" in data.keys():
+            if data["selectedWebcam"] != self._webcam["name"]:
+                webcam = self.get_current_webcam()
+                self._webcam["name"] = webcam["name"]
+                self._webcam["streamUrl"] = webcam["streamUrl"]
+                self._webcam["snapshotUrl"] = webcam["snapshotUrl"]
+        if self._settings.get(["selectedWebcam"]) == "cvprinting":
+            if "cvprintingStreamUrl" in data.keys():
+                self._webcam["streamUrl"] = data["cvprintingStreamUrl"]
+            if "cvprintingSnapshotUrl" in data.keys():
+                self._webcam["snapshotUrl"] = data["cvprintingSnapshotUrl"]
         return data
     
     def on_event(self,event, payload):
