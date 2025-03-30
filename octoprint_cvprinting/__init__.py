@@ -172,24 +172,36 @@ class cvpluginInit(octoprint.plugin.StartupPlugin,
             if not isinstance(data["warningThreshold"], int) and not isinstance(data["warningThreshold"], float):
                 return jsonify({"message": "Error: Invalid value for warningThreshold"}), 400
             self._settings.set(["warningThreshold"], int(data["warningThreshold"]))
-        #TODO: On webcam update, update the data for monitoring process
         if "cvprintingSnapshotUrl" in data.keys():
             if not isinstance(data["cvprintingSnapshotUrl"], str):
                 return jsonify({"message": "Error: Invalid value for cvprintingSnapshotUrl"}), 400
             self._settings.set(["cvprintingSnapshotUrl"], data["cvprintingSnapshotUrl"])
+            if self._settings.get(["selectedWebcam"]) == "cvprinting" and self._printer.is_printing() and self._settings.get(["cvEnabled"]) and self._webcam:
+                self._webcam["snapshotUrl"] = data["cvprintingSnapshotUrl"]
         if "cvprintingStreamUrl" in data.keys():
             if not isinstance(data["cvprintingStreamUrl"], str):
                 return jsonify({"message": "Error: Invalid value for cvprintingStreamUrl"}), 400
             self._settings.set(["cvprintingStreamUrl"], data["cvprintingStreamUrl"])
+            if self._settings.get(["selectedWebcam"]) == "cvprinting" and self._printer.is_printing() and self._settings.get(["cvEnabled"]) and self._webcam:
+                self._webcam["streamUrl"] = data["cvprintingStreamUrl"]
         if "selectedWebcam" in data.keys():
             if not isinstance(data["selectedWebcam"], str):
                 return jsonify({"message": "Error: Invalid value for selectedWebcam"}), 400
             self._settings.set(["selectedWebcam"], data["selectedWebcam"])
-        #TODO: check if printer is printing, if so, stop or start monitoring
+            if self._printer.is_printing() and self._settings.get(["cvEnabled"]) and self._webcam:
+                webcam = self.get_current_webcam()
+                self._webcam["name"] = webcam["name"]
+                self._webcam["streamUrl"] = webcam["streamUrl"]
+                self._webcam["snapshotUrl"] = webcam["snapshotUrl"]
         if "cvEnabled" in data.keys():
             if not isinstance(data["cvEnabled"], bool):
                 return jsonify({"message": "Error: Invalid value for cvEnabled"}), 400
+            tmp = self._settings.get(["cvEnabled"])
             self._settings.set(["cvEnabled"], data["cvEnabled"])
+            if self._printer.is_printing() and data["cvEnabled"] and not tmp:
+                self.start_monitoring()
+            elif self._printer.is_printing() and not data["cvEnabled"] and tmp:
+                self.stop_monitoring()
         if "discordwebhookUrl" in data.keys():
             if not isinstance(data["discordWebhookUrl"], str):
                 return jsonify({"message": "Error: Invalid value for discordWebhookUrl"}), 400
