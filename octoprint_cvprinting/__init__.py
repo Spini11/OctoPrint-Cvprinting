@@ -347,7 +347,7 @@ class cvpluginInit(octoprint.plugin.StartupPlugin,
                 self._settings.set([key], value)
         if "discordNotifications" in data.keys():
             if data["discordNotifications"]:
-                if self._settings.get("discordWebhookUrl"):
+                if self._settings.get(["discordWebhookUrl"]):
                     self._settings.set(["discordNotifications"], True)
                 else:
                     self._logger.info("Disabling discord notifications, no webhook URL found")
@@ -356,7 +356,7 @@ class cvpluginInit(octoprint.plugin.StartupPlugin,
                 self._settings.set(["discordNotifications"], False)
         if "telegramNotifications" in data.keys():
             if data["telegramNotifications"]:
-                if self._settings.get("telegramBotToken") and self._settings.get("telegramChatId"):
+                if self._settings.get(["telegramBotToken"]) and self._settings.get(["telegramChatId"]):
                     self._settings.set(["telegramNotifications"], True)
                 else:
                     self._logger.info("Disabling telegram notifications, no bot token or chat ID found")
