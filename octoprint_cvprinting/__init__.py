@@ -159,43 +159,67 @@ class cvpluginInit(octoprint.plugin.StartupPlugin,
         data = flask.request.get_json()
         if not data:
             return jsonify({"message": "Error: No data received"}), 400
-        for key, value in data.items():
-            if key == "pausePrintOnIssue":
-                if not isinstance(value, bool):
-                    return jsonify({"message": "Error: Invalid value for pausePrintOnIssue"}), 400
-                self._settings.set_boolean(["pausePrintOnIssue"], value)
-            elif key == "pauseThreshold":
-                if not isinstance(value, int):
-                    return jsonify({"message": "Error: Invalid value for pauseThreshold"}), 400
-                if value < 0 or value > 100:
-                    return jsonify({"message": "Error: Invalid value for pauseThreshold"}), 400
-                self._settings.set_int(["pauseThreshold"], value)
-            elif key == "warningThreshold":
-                if not isinstance(value, int):
-                    return jsonify({"message": "Error: Invalid value for warningThreshold"}), 400
-                if value < 0 or value > 100:
-                    return jsonify({"message": "Error: Invalid value for warningThreshold"}), 400
-                self._settings.set_int(["warningThreshold"], value)
-            elif key == "cvprintingSnapshotUrl":
-                if not isinstance(value, str):
-                    return jsonify({"message": "Error: Invalid value for cvprintingSnapshotUrl"}), 400
-                self._settings.set(["cvprintingSnapshotUrl"], value)
-            elif key == "cvprintingStreamUrl":
-                if not isinstance(value, str):
-                    return jsonify({"message": "Error: Invalid value for cvprintingStreamUrl"}), 400
-                self._settings.set(["cvprintingStreamUrl"], value)
-            elif key == "selectedWebcam":
-                if not isinstance(value, str):
-                    return jsonify({"message": "Error: Invalid value for selectedWebcam"}), 400
-                if value not in ["classic", "cvprinting"]:
-                    return jsonify({"message": "Error: Invalid value for selectedWebcam"}), 400
-                self._settings.set(["selectedWebcam"], value)
-            elif key == "cvEnabled":
-                if not isinstance(value, bool):
-                    return jsonify({"message": "Error: Invalid value for cvEnabled"}), 400
-                self._settings.set_boolean(["cvEnabled"], value)
-            #TODO: Add notifications settings with input validation
-        self._settings.save()
+        if "pausePrintOnIssue" in data.keys():
+            if not isinstance(data["pausePrintOnIssue"], bool):
+                return jsonify({"message": "Error: Invalid value for pausePrintOnIssue"}), 400
+            self._settings.set(["pausePrintOnIssue"], data["pausePrintOnIssue"])
+        if "pauseThreshold" in data.keys():
+            if not isinstance(data["pauseThreshold"], int) && not isinstance(data["pauseThreshold"], float):
+                return jsonify({"message": "Error: Invalid value for pauseThreshold"}), 400
+            self._settings.set(["pauseThreshold"], int(data["pauseThreshold"]))
+        if "warningThreshold" in data.keys():
+            if not isinstance(data["warningThreshold"], int) && not isinstance(data["warningThreshold"], float):
+                return jsonify({"message": "Error: Invalid value for warningThreshold"}), 400
+            self._settings.set(["warningThreshold"], int(data["warningThreshold"]))
+        #TODO: On webcam update, update the data for monitoring process
+        if "cvprintingSnapshotUrl" in data.keys():
+            if not isinstance(data["cvprintingSnapshotUrl"], str):
+                return jsonify({"message": "Error: Invalid value for cvprintingSnapshotUrl"}), 400
+            self._settings.set(["cvprintingSnapshotUrl"], data["cvprintingSnapshotUrl"])
+        if "cvprintingStreamUrl" in data.keys():
+            if not isinstance(data["cvprintingStreamUrl"], str):
+                return jsonify({"message": "Error: Invalid value for cvprintingStreamUrl"}), 400
+            self._settings.set(["cvprintingStreamUrl"], data["cvprintingStreamUrl"])
+        if "selectedWebcam" in data.keys():
+            if not isinstance(data["selectedWebcam"], str):
+                return jsonify({"message": "Error: Invalid value for selectedWebcam"}), 400
+            self._settings.set(["selectedWebcam"], data["selectedWebcam"])
+        #TODO: check if printer is printing, if so, stop or start monitoring
+        if "cvEnabled" in data.keys():
+            if not isinstance(data["cvEnabled"], bool):
+                return jsonify({"message": "Error: Invalid value for cvEnabled"}), 400
+            self._settings.set(["cvEnabled"], data["cvEnabled"])
+        if "discordwebhookUrl" in data.keys():
+            if not isinstance(data["discordWebhookUrl"], str):
+                return jsonify({"message": "Error: Invalid value for discordWebhookUrl"}), 400
+            self._settings.set(["discordWebhookUrl"], data["discordWebhookUrl"])
+        if "discordNotifications" in data.keys():
+            if not isinstance(data["discordNotifications"], bool):
+                return jsonify({"message": "Error: Invalid value for discordNotifications"}), 400
+            if not self._settings.get(["discordwebhookUrl"]):
+                return jsonify({"message": "Error: No webhook URL found. Can't enable notifications"}), 400
+            self._settings.set(["discordNotifications"], data["discordNotifications"])
+        if "telegramBotToken" in data.keys():
+            if not isinstance(data["telegramBotToken"], str):
+                return jsonify({"message": "Error: Invalid value for telegramBotToken"}), 400
+            self._settings.set(["telegramBotToken"], data["telegramBotToken"])
+        if "telegramChatId" in data.keys():
+            if not isinstance(data["telegramChatId"], str):
+                return jsonify({"message": "Error: Invalid value for telegramChatId"}), 400
+            if not self._settings.get(["telegramBotToken"]):
+                return jsonify({"message": "Error: No bot token found. Can't set chatId"}), 400
+            self._settings.set(["telegramChatId"], data["telegramChatId"])
+        if "telegramNotifications" in data.keys():
+            if not isinstance(data["telegramNotifications"], bool):
+                return jsonify({"message": "Error: Invalid value for telegramNotifications"}), 400
+            if not self._settings.get(["telegramBotToken"]):
+                return jsonify({"message": "Error: No bot token found. Can't enable notifications"}), 400
+            if not self._settings.get(["telegramChatId"]):
+                return jsonify({"message": "Error: No chat ID found. Can't enable notifications"}), 400
+            self._settings.set(["telegramNotifications"], data["telegramNotifications"])
+        
+
+        
         return jsonify({"message": "Settings updated"}), 200
             
     
