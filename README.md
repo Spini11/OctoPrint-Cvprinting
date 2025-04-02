@@ -53,22 +53,22 @@ After installation, configure the plugin by navigating to **Settings > CVPrintin
 ### 3. Notification Settings
 - **Notification Destinations**: Choose where you want notifications about detected defects to be sent.
 - **Discord Notifications**:
-  1. Set up a [Discord Webhook](https://support.discord.com/hc/en-us/articles/228383668-Intro-to-Webhooks) (right-click or middle-click to open in a new tab):
-     - Follow the steps for "Making a Webhook."
-     - Copy the Webhook URL.
-  2. Paste the Webhook URL into the **Webhook URL** field in the CVPrinting settings.
-  3. Tick the "Enable Discord Notifications" checkbox.
-  4. (Optional) Use "Send Test Notification to Discord" button to test notifications.
-  5. Save
+1. Set up a [Discord Webhook](https://support.discord.com/hc/en-us/articles/228383668-Intro-to-Webhooks) (right-click or middle-click to open in a new tab):
+   - Follow the steps for "Making a Webhook."
+   - Copy the Webhook URL.
+2. Paste the Webhook URL into the **Webhook URL** field in the CVPrinting settings.
+3. Tick the "Enable Discord Notifications" checkbox.
+4. (Optional) Use "Send Test Notification to Discord" button to test notifications.
+5. Save
 
 - **Telegram notifications**:
-  1. Create a telegram bot following this [Guide](https://core.telegram.org/bots/tutorial#obtain-your-bot-token) and obtain your token
-  2. Input token into the **Bot Token** field in the CVPrinting settings and hit Connect.
-  3. Within the next 60 seconds, send a message to the bot on Telegram.
-  4. Once a message is sent check the chat ID drop down menu and pick a field containing your name.
-  5. Tick the "Enable Telegram Notifications" checkbox.
-  6. (Optional) Use "Send Test Notification to Telegram" button to test notifications.
-  7. Save
+1. Create a telegram bot following this [Guide](https://core.telegram.org/bots/tutorial#obtain-your-bot-token) and obtain your token
+2. Input token into the **Bot Token** field in the CVPrinting settings and hit Connect.
+3. Within the next 60 seconds, send a message to the bot on Telegram.
+4. Once a message is sent check the chat ID drop down menu and pick a field containing your name.
+5. Tick the "Enable Telegram Notifications" checkbox.
+6. (Optional) Use "Send Test Notification to Telegram" button to test notifications.
+7. Save
 
 ---
 
