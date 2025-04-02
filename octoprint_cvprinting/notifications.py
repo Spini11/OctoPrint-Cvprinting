@@ -40,24 +40,15 @@ class Notificationscvprinting:
         response = []
         if type == "Test":
             if data.get("target") == "discord":
-                code, message = self.notify_discord("Test", data)
-                if code != 0:
-                    self._logger.info(message)
+                return self.notify_discord("Test", data)
             elif data.get("target") == "telegram":
-                code, message = self.notify_telegram("Test", data)
-                if code != 0:
-                    self._logger.info(message)
+                return self.notify_telegram("Test", data)
             return
         self.getConfig()
         if "discord" in self.destinations:
-            code, message = self.notify_discord(type, data)
-            if code != 0:
-                response.append(message)
+            return self.notify_discord(type, data)
         if "telegram" in self.destinations:
-            code, message = self.notify_telegram(type, data)    
-            if code != 0:
-                response.append(message)
-        return response
+            return self.notify_telegram(type, data)    
     
     def notify_discord(self, type, data):
         file = None
@@ -89,8 +80,8 @@ class Notificationscvprinting:
             response = discord.post(embeds=embeds)
         if response.status_code not in [200, 204]:
             self._logger.info(f"Error sending discord notification: {response.status_code} {response.text}")
-            return 1, f"Error sending discord notification: {response.text}"
-        return 0, None
+            return 1
+        return 0
 
     def notify_telegram(self, type, data):
         botToken = self.telegramSettings.get("botToken")
@@ -114,5 +105,5 @@ class Notificationscvprinting:
             response = requests.post(url + "sendMessage", data=payload)
         if not response or response.status_code != 200:
             self._logger.info(f"Error sending telegram notification: {response.status_code} {response.text}")
-            return 1, f"Error sending telegram notification: {response.text}"
-        return 0, None
+            return 1
+        return 0

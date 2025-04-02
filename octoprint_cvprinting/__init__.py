@@ -140,7 +140,7 @@ class cvpluginInit(octoprint.plugin.StartupPlugin,
         settings["telegramNotifications"] = self._settings.get(["telegramNotifications"])
         settings["telegramBotToken"] = self._settings.get(["telegramBotToken"])
         settings["telegramChatId"] = self._settings.get(["telegramChatId"])
-
+        #TODO: Include webcam list in settings
         return jsonify(settings)
     
     #API endpoint for updating settings
