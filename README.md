@@ -12,6 +12,8 @@ CVPrinting uses computer vision to analyze webcam images, which requires more pr
   - While older Raspberry Pi models (e.g., Pi 4 or Pi 3) may also work, they have not been tested and cannot be guaranteed at this time.
   - Hardware with insufficient performance may potentially cause defects during the print.
 
+- If you running Raspberry Pi 5 with Pi Camera 3 use this recommended camera set-up: (https://github.com/signag/raspi-cam-srv)
+
 ---
 
 
