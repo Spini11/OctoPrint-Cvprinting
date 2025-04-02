@@ -37,7 +37,6 @@ class Notificationscvprinting:
         
 
     def notify(self, type, data):
-        response = []
         if type == "Test":
             if data.get("target") == "discord":
                 return self.notify_discord("Test", data)
@@ -47,9 +46,10 @@ class Notificationscvprinting:
         #Update notification settings
         self.getConfig()
         if "discord" in self.destinations:
-            return self.notify_discord(type, data)
+            self.notify_discord(type, data)
         if "telegram" in self.destinations:
-            return self.notify_telegram(type, data)    
+            self.notify_telegram(type, data)
+        return    
     
     def notify_discord(self, type, data):
         file = None
