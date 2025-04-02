@@ -44,6 +44,7 @@ class Notificationscvprinting:
             elif data.get("target") == "telegram":
                 return self.notify_telegram("Test", data)
             return
+        #Update notification settings
         self.getConfig()
         if "discord" in self.destinations:
             return self.notify_discord(type, data)
@@ -65,6 +66,7 @@ class Notificationscvprinting:
             embeds[0]["description"] = self._warningTemplate.format(label=data.get("label"), conf=data.get("conf"))
         elif type == "Error":
             embeds[0]["description"] = self._errorTemplate.format(label=data.get("label"), conf=data.get("conf"))
+        #If type is test, change webhookURL to the supplied one
         elif type == "Test":
             embeds[0]["description"] = self._testTemplate
             embeds[0]["title"] = "Test notification"
@@ -90,6 +92,7 @@ class Notificationscvprinting:
             payload["caption"] = self._warningTemplate.format(label=data.get("label"), conf=data.get("conf"))
         elif type == "Error":
             payload["caption"] = self._errorTemplate.format(label=data.get("label"), conf=data.get("conf"))
+        #If type is test, change token and chat_id to the supplied one
         elif type == "Test":
             payload["caption"] = self._testTemplate
             botToken = data.get("token")

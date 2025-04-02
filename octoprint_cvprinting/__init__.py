@@ -52,13 +52,7 @@ class cvpluginInit(octoprint.plugin.StartupPlugin,
     def on_shutdown(self):
         #Make sure monitoring process and listener thread are stopped
         self.stop_monitoring()
-        #Delete all images in the folder
-        image_folder = os.path.join(self._basefolder, 'data/images')
-        for filename in os.listdir(image_folder):
-            file_path = os.path.join(image_folder, filename)
-            if os.path.isfile(file_path):
-                os.remove(file_path)
-        self._logger.info("CVPrinting stoped")
+        self._logger.info("CVPrinting stopped")
 
 
     def get_settings_defaults(self):
@@ -248,6 +242,7 @@ class cvpluginInit(octoprint.plugin.StartupPlugin,
             self._logger.debug("CV process already running")
         self._logger.debug("Starting monitoring")
         self._webcam = multiprocessing.Manager().dict()
+        #Update webcam settings
         webcam = self.get_current_webcam()
         self._webcam["name"] = webcam["name"]
         self._webcam["streamUrl"] = webcam["streamUrl"]
@@ -256,13 +251,12 @@ class cvpluginInit(octoprint.plugin.StartupPlugin,
         self._CVprocess = multiprocessing.Process(target=Monitoring.Monitoring, kwargs={'queue': self._queue, "baseFolder" : baseFolder, "webcam" : self._webcam, "running" : self._running}, name="CVProcess")
         self._CVprocess.daemon = True
         self._CVprocess.start()
-        self._logger.debug("Monitoring started")
 
     #queue implementation to send messages to the main thread, used for logging and pausing the print
     def queue_listener(self):
-        self._logger.debug("Queue listener starting")
         firstDetection = False
         lastWarningTime = 0
+        #If print was paused due to high confidence, set the last pause time to now to avoid pausing again
         if self._pausedOnError:
             self._lastPauseTime = time.time()
             lastWarningTime = time.time()
@@ -270,7 +264,6 @@ class cvpluginInit(octoprint.plugin.StartupPlugin,
             self._lastPauseTime = 0
         while True:
             msg_type, data = self._queue.get()
-            print(msg_type + " " + str(data))
             if msg_type == "EXIT":
                 break
             elif msg_type == "INFO":
@@ -289,8 +282,10 @@ class cvpluginInit(octoprint.plugin.StartupPlugin,
                     continue
                 self._currentConfidence = int(result.get("conf"))
                 if int(result.get("conf")) > int(self._settings.get(["pauseThreshold"])) and self._settings.get(["pausePrintOnIssue"]):
+                    #If it's the first detection, don't pause the print
                     if not firstDetection:
                         firstDetection = True
+                    #If the print was paused in the last 10 minutes, don't pause again
                     elif (self._lastPauseTime + 10*60) < time.time():
                         self._logger.info("Pausing print due to high confidence")
                         self._notificationsModule.notify("Error", {"image": image, "label": result.get("label"), "conf": result.get("conf")})
@@ -298,8 +293,10 @@ class cvpluginInit(octoprint.plugin.StartupPlugin,
                         self._lastPauseTime = time.time()
                         self._pausedOnError = True
                 elif int(result.get("conf")) > int(self._settings.get(["warningThreshold"])):
+                    #If it's the first detection, don't send a warning
                     if not firstDetection:
                         firstDetection = True
+                    #If warning was sent in the last 5 minutes, don't send again
                     if (lastWarningTime + 5*60) < time.time():
                         self._logger.info("Warning: " + str(result.get("label")) + " " + str(result.get("conf")))
                         self._notificationsModule.notify("Warning", {"image": image, "label": result.get("label"), "conf": result.get("conf")})
@@ -313,7 +310,6 @@ class cvpluginInit(octoprint.plugin.StartupPlugin,
         self._running.value = False
         if self._CVprocess and self._CVprocess.is_alive():
             self._logger.debug("process is alive")
-            print(multiprocessing.active_children())
             self._CVprocess.join()
             self._logger.debug("CV process exited")
             self._CVprocess = None
@@ -327,14 +323,13 @@ class cvpluginInit(octoprint.plugin.StartupPlugin,
             self._queueListener = None
         else:
             self._logger.debug("Queue listener already exited")
+        #Delete all images in the folder after stopping monitoring
         for filename in os.listdir(os.path.join(self._basefolder, 'data/images/')):
             file_path = os.path.join(os.path.join(self._basefolder, 'data/images/'), filename)
             if os.path.isfile(file_path):
                 os.remove(file_path)
 
     def on_settings_save(self, data):
-        for key, value in data.items():
-            print (key, value) 
         if self._printer.is_printing() and "cvEnabled" in data.keys():
             if not data["cvEnabled"]:
                 self._logger.debug("cv was disabled while printing")

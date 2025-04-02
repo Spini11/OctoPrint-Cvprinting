@@ -24,7 +24,7 @@ class visionModule:
 
     #Code of the following function was adapted from https://docs.ultralytics.com/integrations/mnn/#mnn-only-inference
     #Original author: UltraLytics, Accesed on 13.3.2025
-    #TODO: loading deleted image causes errors in process
+
     def CheckImage(self, img):
         imageLocation = self.getImage(img)
         if imageLocation is None:
