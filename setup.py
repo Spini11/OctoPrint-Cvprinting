@@ -18,10 +18,10 @@ plugin_version = "1.0.0"
 
 # The plugin's description. Can be overwritten within OctoPrint's internal data via __plugin_description__ in the plugin
 # module
-plugin_description = """Computer vision for detecting issue during 3d printing"""
+plugin_description = """Computer vision for detecting issue during 3d printing with automatic notification to Discord and Telegram and pausing the print."""
 
 # The plugin's author. Can be overwritten within OctoPrint's internal data via __plugin_author__ in the plugin module
-plugin_author = "Viliam Chudacik"
+plugin_author = "Viliam Chudacik (Spini)"
 
 # The plugin's author's mail address.
 plugin_author_email = "xchuda06@vutbr.cz"
@@ -33,7 +33,7 @@ plugin_url = "https://github.com/spini/OctoPrint-Cvprinting"
 plugin_license = "AGPLv3"
 
 # Any additional requirements besides OctoPrint should be listed here
-plugin_requires = ["MNN","discordwebhook"]
+plugin_requires = ["MNN","discordwebhook", "PIL"]
 
 ### --------------------------------------------------------------------------------------------------------------------
 ### More advanced options that you usually shouldn't have to touch follow after this point
