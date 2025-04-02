@@ -35,6 +35,7 @@ $(function(){
         self.telegramEnabled = ko.observable();
         self.telegramToken = ko.observable();
         self.telegramChatId = ko.observable();
+        self.cvprintingEnabled = ko.observable();
 
         self.onBeforeBinding = function() {
             self.warningThreshold(self.settings.settings.plugins.cvprinting.warningThreshold());
@@ -48,6 +49,7 @@ $(function(){
             self.telegramEnabled(self.settings.settings.plugins.cvprinting.telegramNotifications());
             self.telegramToken(self.settings.settings.plugins.cvprinting.telegramBotToken());
             self.telegramChatId(self.settings.settings.plugins.cvprinting.telegramChatId());
+            self.cvprintingEnabled(self.settings.settings.plugins.cvprinting.cvEnabled());
         };
 
         self.onSettingsShown = function() {
@@ -57,6 +59,7 @@ $(function(){
             self.selectedWebcam(self.settings.settings.plugins.cvprinting.selectedWebcam());
             self.telegramToken(self.settings.settings.plugins.cvprinting.telegramBotToken());
             self.telegramChatId(self.settings.settings.plugins.cvprinting.telegramChatId());
+            self.cvprintingEnabled(self.settings.settings.plugins.cvprinting.cvEnabled());
             self.clearErrors();
             self.telegramConnected(false);
             self.telegramConnecting(false);
@@ -100,6 +103,7 @@ $(function(){
             self.settings.settings.plugins.cvprinting.discordNotifications(self.discordEnabled());
             self.settings.settings.plugins.cvprinting.cvprintingSnapshotUrl(self.cvprintingSnapshotUrl());
             self.settings.settings.plugins.cvprinting.cvprintingStreamUrl(self.cvprintingStreamUrl());
+            self.settings.settings.plugins.cvprinting.cvEnabled(self.cvprintingEnabled());
             if (self.telegramToken() === ""){
                 console.log("Telegram token is empty");
                 self.telegramConnected(false);

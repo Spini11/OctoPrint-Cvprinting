@@ -4,6 +4,9 @@
         <span id="ConfidenceColorStatus" style="color: #000; font-size: 30px; vertical-align: middle;">&#8226;</span>
         <span id="ConfidenceValue">...</span> <span>%</span>
     </div>  
+    <div id="disabled" style="display: none;">
+        <span id="disabledText">Print issue detection is disabled</span>
+    </div>
     <div id="notPrinting" style="display: none;">
         <span id="notPrintingText">There is nothing being printed right now</span>
     </div>
@@ -13,6 +16,13 @@
     <div id="settings" style="padding-top: 5%;">
         <span id="settingsText" style="font-size: 18px; font-weight: bold; display: block; margin-bottom: 10px;">Settings</span>
         <form class="form-horizontal" style="display: flex; flex-direction: column; gap: 15px; padding-left: 10px;">
+            <!-- Enable plugin -->
+            <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px;">
+                <label class="EnablePluginSettingsLabel" for="enable_plugin" 
+                       style="font-size: 14px; margin: 0;">Enable print issue detection</label>
+                <input type="checkbox" id="enable_plugin" data-bind="checked: cvprintingEnabled" 
+                       style="margin: 0; transform: translateY(1px);">
+            </div>
             <!-- Pause on error -->
             <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px;">
                 <label class="PauseIssueSettingsLabel" for="pause_on_issue" 

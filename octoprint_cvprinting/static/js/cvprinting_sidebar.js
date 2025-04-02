@@ -6,6 +6,7 @@ $(function(){
         self.pauseOnError = ko.observable();
         self.pauseConfidence = ko.observable();
         self.warningConfidence = ko.observable();
+        self.cvprintingEnabled = ko.observable();
         self.dataSave = false;
         self.pauseSubscriptions = false;
         getConfidence().then(confidence => {
@@ -13,13 +14,21 @@ $(function(){
         });
 
         function updateDynamicVariable() {
-            if (self.printerState.isPrinting() === undefined){
+            if (self.printerState.isPrinting() === undefined) {
                 return; 
             }
+            if (self.cvprintingEnabled() === false){
+                document.getElementById("currentStatus").style.display = "none";
+                document.getElementById("notPrinting").style.display = "none";
+                document.getElementById("notLoaded").style.display = "none";
+                document.getElementById("disabled").style.display = "block";
+                return;
+            };
             if (self.printerState.isPrinting()) {
                 document.getElementById("currentStatus").style.display = "block";
                 document.getElementById("notPrinting").style.display = "none";
                 document.getElementById("notLoaded").style.display = "none";
+                document.getElementById("disabled").style.display = "none";
                 document.getElementById("ConfidenceText").innerText = "Current Error confidence:";
                 
                 getConfidence().then(confidence => {
@@ -37,6 +46,7 @@ $(function(){
                 document.getElementById("currentStatus").style.display = "block";
                 document.getElementById("ConfidenceText").innerText = "Last recorded Error confidence:";
                 document.getElementById("notLoaded").style.display = "none";
+                document.getElementById("notPrinting").style.display = "none";
 
                 getConfidence().then(confidence => {
                     if (confidence >= 0){
@@ -52,6 +62,7 @@ $(function(){
                 document.getElementById("notPrinting").style.display = "block";
                 document.getElementById("currentStatus").style.display = "none";
                 document.getElementById("notLoaded").style.display = "none";
+                document.getElementById("disabled").style.display = "none";
             }
         }
 
@@ -59,6 +70,7 @@ $(function(){
             self.pauseOnError(self.settings.settings.plugins.cvprinting.pausePrintOnIssue());
             self.pauseConfidence(self.settings.settings.plugins.cvprinting.pauseThreshold());
             self.warningConfidence(self.settings.settings.plugins.cvprinting.warningThreshold());
+            self.cvprintingEnabled(self.settings.settings.plugins.cvprinting.cvEnabled());
         };
 
         self.onAfterBinding = function() {
@@ -76,6 +88,7 @@ $(function(){
                 self.pauseOnError(self.settings.settings.plugins.cvprinting.pausePrintOnIssue());
                 self.pauseConfidence(self.settings.settings.plugins.cvprinting.pauseThreshold());
                 self.warningConfidence(self.settings.settings.plugins.cvprinting.warningThreshold());
+                self.cvprintingEnabled(self.settings.settings.plugins.cvprinting.cvEnabled());
                 self.pauseSubscriptions = false;
         
             return;
@@ -84,18 +97,12 @@ $(function(){
             self.settings.settings.plugins.cvprinting.pausePrintOnIssue(self.pauseOnError());
             self.settings.settings.plugins.cvprinting.pauseThreshold(self.pauseConfidence());
             self.settings.settings.plugins.cvprinting.warningThreshold(self.warningConfidence());
+            self.settings.settings.plugins.cvprinting.cvEnabled(self.cvprintingEnabled());
             self.dataSave = false;
         };
 
 
         function getConfidence() {
-            // return fetch("/plugin/cvprinting/get_confidence", {method: "POST"})
-            //     .then(response => response.json())
-            //     .then(data => Math.floor(data.variable))
-            //     .catch(error => {
-            //         console.error("Error fetching variable:", error);
-            //         return -1; // Return a default value in case of error
-            //     });
             var url = OctoPrint.getBlueprintUrl("cvprinting") + "get_confidence";
             return OctoPrint.post(url)
             .then(function(response) {
@@ -124,7 +131,12 @@ $(function(){
             self.settings.saveData();
         });
     
-    
+        self.cvprintingEnabled.subscribe(function (newValue) {
+            if(self.pauseSubscriptions === true)
+                return;
+            self.dataSave = true;
+            self.settings.saveData();
+        });
 
     }
 
