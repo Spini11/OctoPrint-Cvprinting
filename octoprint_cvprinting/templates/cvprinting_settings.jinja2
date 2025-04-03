@@ -1,21 +1,40 @@
 <div id="cvprinting_settings" style="max-width: 800px; margin: 0 auto; font-family: Arial, sans-serif;">
-    <div class="WebcamPreview" style="text-align: center; margin-bottom: 20px;">
+    <div class="WebcamPreview" style="text-align: center; margin-bottom: 10px;">
         <label class="webcamPreviewLabel" style="display: block; margin-bottom: 10px; font-weight: bold;">Webcam Preview</label>
-        <img id="videoStream"
-            data-bind="attr: {src: currentStream}"
-            alt="Webcam preview" 
-            style="max-width: 90%; max-height: 80vh; width: auto; height: auto; border: 1px solid #ccc; border-radius: 8px;">
+        <div id="videoContainer" style="
+            width: 640px; 
+            height: 360px; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            background: white no-repeat center;
+            background-size: 100px 100px;
+            border: 1px solid #ccc; 
+            border-radius: 8px;
+            overflow: hidden;">
+            <img id="videoStream"
+                data-bind="attr: {src: currentStream() + '?' + Date.now()}" 
+                alt="Webcam preview failed to load from the stream URL" 
+                style="max-width: 100%; max-height: 100%; object-fit: contain; display: block;">
+        </div>
+    
+        <button type="button" 
+            style="margin-top: 10px; padding: 5px 10px; font-size: 0.9em; border: 1px solid #ccc; border-radius: 5px; background: #f5f5f5; cursor: pointer;" 
+            onclick="document.getElementById('videoStream').src = document.getElementById('videoStream').src.split('?')[0] + '?' + Date.now();">
+            🔄 Refresh Camera
+        </button>
     </div>
 
     <label class="settingsLabel" style="font-weight: bold; font-size: 1.2em; display: block; margin-bottom: 15px;">Settings</label>
     <form class="form-horizontal" style="display: flex; flex-direction: column; gap: 20px;">
-        <div class="control-group">
+        <div class="control-group" style="display: flex; align-items: baseline; gap: 10px;">
+            <input type="checkbox" id="cvprinting_enabled" data-bind="checked: cvprintingEnabled" style="margin-right: 10px; transform: translateY(2px);">
             <label class="EnableCVPrintingLabel" style="display: block; margin-bottom: 5px;">Enable computer vision for detecting issues</label>
-            <input type="checkbox" id="cvprinting_enabled" data-bind="checked: cvprintingEnabled">
         </div>
-        <div class="control-group">
+        
+        <div class="control-group" style="display: flex; align-items: baseline; gap: 10px;">
+            <input type="checkbox" id="pause_on_issue" data-bind="checked: pauseOnError" style="margin-right: 10px; transform: translateY(2px);">
             <label class="PauseIssueSettingsLabel" style="display: block; margin-bottom: 5px;">Pause print when issue is detected</label>
-            <input type="checkbox" id="pause_on_issue" data-bind="checked: pauseOnError">
         </div>
 
         <div class="control-group">
@@ -108,12 +127,12 @@
 
         <label class="notificationsLabel" style="font-weight: bold; font-size: 1.1em; display: block; margin-top: 20px;">Notifications</label>
         <label class="notificationsLabel" style="font-weight: bold; font-size: 1em; display: block; margin-top: 20px;">Discord</label>
-        <div class="control-group" style="display: flex; align-items: center; gap: 10px;">
+        <div class="control-group" style="display: flex; align-items: baseline; gap: 10px;">
             <input 
                 type="checkbox" 
                 id="discord_enabled" 
                 data-bind="checked: discordEnabled, enable: webhookUrl()" 
-                style="margin-right: 10px;">
+                style="margin-right: 10px; transform: translateY(2px);">
             <label for="discord_enabled" class="DiscordEnabledLabel">Enable Discord Notifications</label>
         </div>
 
@@ -136,12 +155,12 @@
         </div>
                 
         <label class="notificationsLabel" style="font-weight: bold; font-size: 1em; display: block; margin-top: 20px;">Telegram</label>
-        <div class="control-group" style="display: flex; align-items: center; gap: 10px;">
+        <div class="control-group" style="display: flex; align-items: baseline; gap: 10px;">
             <input 
                 type="checkbox" 
                 id="telegram_enabled" 
                 data-bind="checked: telegramEnabled, enable: telegramToken() && (telegramChatId() || telegramChatIdFieldValue())"
-                style="margin-right: 10px;">
+                style="margin-right: 10px; transform: translateY(2px);">
             <label for="telegram_enabled" class="TelegramEnabledLabel">Enable Telegram Notifications</label>
         </div>
         <div class="control-group" style="display: flex; align-items: center; gap: 10px;">
