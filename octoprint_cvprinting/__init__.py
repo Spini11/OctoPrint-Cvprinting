@@ -125,8 +125,6 @@ class cvpluginInit(octoprint.plugin.StartupPlugin,
         settings["pausePrintOnIssue"] = self._settings.get(["pausePrintOnIssue"])
         settings["pauseThreshold"] = self._settings.get(["pauseThreshold"])
         settings["warningThreshold"] = self._settings.get(["warningThreshold"])
-        settings["cvprintingSnapshotUrl"] = self._settings.get(["cvprintingSnapshotUrl"])
-        settings["cvprintingStreamUrl"] = self._settings.get(["cvprintingStreamUrl"])
         settings["selectedWebcam"] = self._settings.get(["selectedWebcam"])
         settings["cvEnabled"] = self._settings.get(["cvEnabled"])
         settings["discordNotifications"] = self._settings.get(["discordNotifications"])
@@ -134,7 +132,7 @@ class cvpluginInit(octoprint.plugin.StartupPlugin,
         settings["telegramNotifications"] = self._settings.get(["telegramNotifications"])
         settings["telegramBotToken"] = self._settings.get(["telegramBotToken"])
         settings["telegramChatId"] = self._settings.get(["telegramChatId"])
-        #TODO: Include webcam list in settings
+        settings["webcams"] = self.get_webcam_list()
         return jsonify(settings)
     
     #API endpoint for updating settings
