@@ -62,12 +62,17 @@ class cvpluginInit(octoprint.plugin.StartupPlugin,
         webcams = octoprint.webcams.get_webcams()
         webcamList = []
         for webcamName, providerContainer in webcams.items():
-            if webcamName == "classic" or webcamName == "cvprinting":
+            if webcamName == "classic":
                 webcamList.append({
                     "name": webcamName,
                     "streamUrl": providerContainer.config.extras.get("stream", None),
                     "snapshotUrl": providerContainer.config.snapshotDisplay
                 })
+        webcamList.append({
+            "name": "cvprinting",
+            "streamUrl": self._settings.get(["cvprintingStreamUrl"]),
+            "snapshotUrl": self._settings.get(["cvprintingSnapshotUrl"])
+        })
         return webcamList
                 
     #Get the currently used webcam
