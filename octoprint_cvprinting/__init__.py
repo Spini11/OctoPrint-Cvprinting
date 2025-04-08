@@ -203,7 +203,7 @@ class cvpluginInit(octoprint.plugin.StartupPlugin,
         if "discordNotifications" in data.keys():
             if not isinstance(data["discordNotifications"], bool):
                 return jsonify({"message": "Error: Invalid value for discordNotifications"}), 400
-            if not self._settings.get(["discordwebhookUrl"]):
+            if not self._settings.get(["discordWebhookUrl"]):
                 return jsonify({"message": "Error: No webhook URL found. Can't enable notifications"}), 400
             self._settings.set(["discordNotifications"], data["discordNotifications"])
         if "telegramBotToken" in data.keys():
