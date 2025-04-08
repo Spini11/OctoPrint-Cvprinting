@@ -151,13 +151,21 @@ class cvpluginInit(octoprint.plugin.StartupPlugin,
                 return jsonify({"message": "Error: Invalid value for pausePrintOnIssue"}), 400
             self._settings.set(["pausePrintOnIssue"], data["pausePrintOnIssue"])
         if "pauseThreshold" in data.keys():
-            if not isinstance(data["pauseThreshold"], int) and not isinstance(data["pauseThreshold"], float):
+            try:
+                pause_threshold_value = int(data["pauseThreshold"])
+            except ValueError:
+                return jsonify({"message": "Error: Invalid value for pauseThreshold"}), 400  
+            if pause_threshold_value <= 0 or pause_threshold_value > 100:
                 return jsonify({"message": "Error: Invalid value for pauseThreshold"}), 400
-            self._settings.set(["pauseThreshold"], int(data["pauseThreshold"]))
+            self._settings.set(["pauseThreshold"], int(pause_threshold_value))
         if "warningThreshold" in data.keys():
-            if not isinstance(data["warningThreshold"], int) and not isinstance(data["warningThreshold"], float):
+            try:
+                warning_threshold_value = int(data["warningThreshold"])
+            except ValueError:
                 return jsonify({"message": "Error: Invalid value for warningThreshold"}), 400
-            self._settings.set(["warningThreshold"], int(data["warningThreshold"]))
+            if warning_threshold_value <= 0 or warning_threshold_value > 100:
+                return jsonify({"message": "Error: Invalid value for warningThreshold"}), 400
+            self._settings.set(["warningThreshold"], int(warning_threshold_value))
         if "cvprintingSnapshotUrl" in data.keys():
             if not isinstance(data["cvprintingSnapshotUrl"], str):
                 return jsonify({"message": "Error: Invalid value for cvprintingSnapshotUrl"}), 400
