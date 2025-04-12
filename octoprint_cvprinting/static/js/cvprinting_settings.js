@@ -92,6 +92,7 @@ $(function(){
 
         self.onSettingsHidden = function() {
             self.stopFetching();
+            self.currentStream("");
         };
 
         self.onSettingsBeforeSave = function() {
