@@ -412,7 +412,25 @@ class cvpluginInit(octoprint.plugin.StartupPlugin,
 
     def is_blueprint_csrf_protected(self):
         return True
+    
+    def get_update_information(self, *args, **kwargs):
+        return dict(
+            updateplugindemo=dict(
+                displayName=self._plugin_name,
+                displayVersion=self._plugin_version,
+
+                type="github_release",
+                current=self._plugin_version,
+                user="Spini11",
+                repo="OctoPrint-Cvprinting",
+
+                pip="https://github.com/Spini11/OctoPrint-Cvprinting/archive/refs/heads/master.zip"
+            )
+        )
 
 __plugin_name__ = "CVPrinting"
 __plugin_pythoncompat__ = ">=3.7,<4"
 __plugin_implementation__ = cvpluginInit()
+__plugin_hooks__ = {
+    "octoprint.plugin.softwareupdate.check_config": __plugin_implementation__.get_update_information
+}
