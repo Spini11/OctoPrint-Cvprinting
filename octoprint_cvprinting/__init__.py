@@ -46,7 +46,7 @@ class cvpluginInit(octoprint.plugin.StartupPlugin,
         self._running = multiprocessing.Value('b', False)
         self._notificationsModule = notifications.Notificationscvprinting(self._settings, self._logger)
         #Create folder for storing images
-        os.makedirs(os.path.join(self._basefolder, 'data/images'), exist_ok=True)
+        os.makedirs(os.path.join(self.get_plugin_data_folder(), 'images'), exist_ok=True)
 
 
     def on_shutdown(self):
@@ -240,8 +240,8 @@ class cvpluginInit(octoprint.plugin.StartupPlugin,
             self._logger.debug("Monitoring already running")
             return
         #Delete all images in the folder before starting monitoring
-        for filename in os.listdir(os.path.join(self._basefolder, 'data/images/')):
-            file_path = os.path.join(os.path.join(self._basefolder, 'data/images/'), filename)
+        for filename in os.listdir(os.path.join(self.get_plugin_data_folder(), 'images/')):
+            file_path = os.path.join(os.path.join(self.get_plugin_data_folder(), 'images/'), filename)
             if os.path.isfile(file_path):
                 os.remove(file_path)
         self._running.value = True
@@ -335,8 +335,8 @@ class cvpluginInit(octoprint.plugin.StartupPlugin,
         else:
             self._logger.debug("Queue listener already exited")
         #Delete all images in the folder after stopping monitoring
-        for filename in os.listdir(os.path.join(self._basefolder, 'data/images/')):
-            file_path = os.path.join(os.path.join(self._basefolder, 'data/images/'), filename)
+        for filename in os.listdir(os.path.join(self.get_plugin_data_folder(), 'images/')):
+            file_path = os.path.join(os.path.join(self.get_plugin_data_folder(), 'images/'), filename)
             if os.path.isfile(file_path):
                 os.remove(file_path)
 
@@ -415,15 +415,13 @@ class cvpluginInit(octoprint.plugin.StartupPlugin,
     
     def get_update_information(self, *args, **kwargs):
         return dict(
-            updateplugindemo=dict(
+            cvprinting=dict(
                 displayName=self._plugin_name,
                 displayVersion=self._plugin_version,
-
                 type="github_release",
                 current=self._plugin_version,
                 user="Spini11",
                 repo="OctoPrint-Cvprinting",
-
                 pip="https://github.com/Spini11/OctoPrint-Cvprinting/archive/refs/heads/master.zip"
             )
         )
