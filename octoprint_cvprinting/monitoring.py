@@ -8,9 +8,9 @@ class Monitoring:
     _webcam = None
     _running = None
 
-    def __init__(self, queue, baseFolder, webcam, running):
+    def __init__(self, queue, baseFolder, dataFolder, webcam, running):
         self._queue = queue
-        self._visionModule = visionModule.visionModule(baseFolder)
+        self._visionModule = visionModule.visionModule(dataFolder, baseFolder)
         self._webcam = webcam
         self._running = running
         self.monitor()

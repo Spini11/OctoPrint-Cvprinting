@@ -12,10 +12,9 @@ class visionModule:
     model = None
     folder = None
 
-    def __init__(self,  folder):
-        self.folder = os.path.join(folder, "data")
-        self.model = os.path.join(self.folder, "best.mnn")
-
+    def __init__(self,  folder, baseFolder):
+        self.folder = folder
+        self.model = os.path.join(baseFolder,  "data/best.mnn")
         config = {}
         config["precision"] = "medium"
         config["numThread"] = 2 if os.cpu_count() >= 2 else 1

@@ -258,8 +258,7 @@ class cvpluginInit(octoprint.plugin.StartupPlugin,
         self._webcam["name"] = webcam["name"]
         self._webcam["streamUrl"] = webcam["streamUrl"]
         self._webcam["snapshotUrl"] = webcam["snapshotUrl"]
-        baseFolder = self._basefolder
-        self._CVprocess = multiprocessing.Process(target=Monitoring.Monitoring, kwargs={'queue': self._queue, "baseFolder" : baseFolder, "webcam" : self._webcam, "running" : self._running}, name="CVProcess")
+        self._CVprocess = multiprocessing.Process(target=Monitoring.Monitoring, kwargs={'queue': self._queue, "baseFolder": self._basefolder,  "dataFolder" : self.get_plugin_data_folder(), "webcam" : self._webcam, "running" : self._running}, name="CVProcess")
         self._CVprocess.daemon = True
         self._CVprocess.start()
 
