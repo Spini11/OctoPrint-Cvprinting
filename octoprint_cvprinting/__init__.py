@@ -421,7 +421,7 @@ class cvpluginInit(octoprint.plugin.StartupPlugin,
                 current=self._plugin_version,
                 user="Spini11",
                 repo="OctoPrint-Cvprinting",
-                pip="https://github.com/Spini11/OctoPrint-Cvprinting/archive/refs/heads/master.zip"
+                pip="https://github.com/Spini11/OctoPrint-Cvprinting/archive/{target_version}.zip"
             )
         )
 
