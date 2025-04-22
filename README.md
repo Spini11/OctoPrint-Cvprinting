@@ -9,7 +9,7 @@ CVPrinting uses computer vision to analyze webcam images, which requires more pr
 
 - **Minimum Recommended Hardware**:
   - The plugin has been tested on a **Raspberry Pi 5** and runs smoothly. Any system with similar or higher performance should also run it without issues.
-  - While older Raspberry Pi models (e.g., Pi 4 or Pi 3) may also work, they have not been tested and cannot be guaranteed at this time.
+  - Older Pi models (e.g., Pi 4 or Pi 3) are not supported as of now
   - Hardware with insufficient performance may potentially cause defects during the print.
 
 - If you running Raspberry Pi 5 with Pi Camera 3 use this recommended camera set-up: (https://github.com/signag/raspi-cam-srv)
