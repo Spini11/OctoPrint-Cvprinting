@@ -8,7 +8,7 @@ Unlike other solutions, CVPrinting does not require a remote server, as it runs 
 CVPrinting uses computer vision to analyze webcam images, which requires more processing power than standard OctoPrint setups.
 
 - **Minimum Recommended Hardware**:
-  - The plugin has been tested on a **Raspberry Pi 5** and runs smoothly. Any system with similar or higher performance should also run it without issues.
+  - The plugin has been tested on a **Raspberry Pi 5** and runs smoothly. Any system with similar or higher performance should also run it without issues, but can't be guaranteed.
   - Older Pi models (e.g., Pi 4 or Pi 3) are not supported as of now
   - Hardware with insufficient performance may potentially cause defects during the print.
 
@@ -18,6 +18,11 @@ CVPrinting uses computer vision to analyze webcam images, which requires more pr
 
 
 ## Setup
+### Installing using OctoPrint's plugin repository (easiest)
+1. Open [Plugin Manager](https://docs.octoprint.org/en/master/bundledplugins/pluginmanager.html)(right-click or middle-click to open in a new tab) in Octoprint
+2. Click on "+ Get More" button
+3. Input "OctoPrint-CVPrinting" into the search field and then hit "Install" button
+
 ### Manually installing plugin from a file
 1. Download the plugin's zip file.
 2. Install it via the bundled [Plugin Manager](https://docs.octoprint.org/en/master/bundledplugins/pluginmanager.html) (right-click or middle-click to open in a new tab):

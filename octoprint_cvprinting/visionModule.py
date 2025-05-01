@@ -106,10 +106,8 @@ class visionModule:
         for score, classID in zip(scores, class_ids):
             score_value = int(score.read_as_tuple()[0] * 100)
             classID_value = int(classID.read_as_tuple()[0])
-            #Script printOK and OverExtrusion due to high error rate
-            if classID_value == 0 or classID_value == 3:
-                continue
-            else:
+            #If detected class is spaghetti or stringing, save the result with the highest confidence
+            if classID_value == 1 or classID_value == 2:
                 if not resultHighestConfidenceNotOk or score_value > resultHighestConfidenceNotOk.get("conf"):
                     resultHighestConfidenceNotOk = {"label": self.getClassName(classID_value), "conf": score_value}
         return resultHighestConfidenceNotOk
