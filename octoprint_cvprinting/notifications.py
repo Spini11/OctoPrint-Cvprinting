@@ -146,5 +146,3 @@ class Notificationscvprinting:
             self._logger.info(f"Error sending telegram notification: {response.status_code} {response.text}")
             return 1
         return 0
-    
-    

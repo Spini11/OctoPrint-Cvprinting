@@ -332,6 +332,9 @@ class cvpluginInit(octoprint.plugin.StartupPlugin,
     def is_blueprint_csrf_protected(self):
         return True
     
+    def is_template_autoescaped(self):
+        return True
+    
     def get_update_information(self, *args, **kwargs):
         return dict(
             cvprinting=dict(
