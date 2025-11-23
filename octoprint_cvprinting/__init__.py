@@ -127,12 +127,12 @@ class cvpluginInit(octoprint.plugin.StartupPlugin,
         else:
             return jsonify({"message": "Error sending notification, verify inputted data"}), 400
     
-    #API endpoint for getting settings - implemntation removed due to project requirements change, if you need it please contact me on GitHub, thanks!
+    #API endpoint for getting settings - implementation removed due to project requirements change, if you need it please contact me on GitHub, thanks!
     @octoprint.plugin.BlueprintPlugin.route("/get_settings", methods=["POST"])
     def get_settings(self):
         return jsonify({"message": "Not implemented, if you need it please contact me on GitHub, thanks!"}), 501
     
-    #API endpoint for updating settings - implemntation removed due to project requirements changed, if you need it please contact me on GitHub, thanks!
+    #API endpoint for updating settings - implementation removed due to project requirements changed, if you need it please contact me on GitHub, thanks!
     @octoprint.plugin.BlueprintPlugin.route("/update_settings", methods=["POST"])
     def update_settings(self):
         return jsonify({"message": "Not implemented, if you need it please contact me on GitHub, thanks!"}), 501
