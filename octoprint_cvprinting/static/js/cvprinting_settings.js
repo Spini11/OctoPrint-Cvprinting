@@ -69,7 +69,7 @@ $(function(){
             self.customWebhookUrl(self.settings.settings.plugins.cvprinting.customWebhookUrl());
             //Discord
             self.discordEnabled(self.settings.settings.plugins.cvprinting.discordNotifications());
-            self.discordWebhookUrl(self.settings.settings.plugins.cvprinting.discordWebhookUrl());
+            self.webhookUrl(self.settings.settings.plugins.cvprinting.discordWebhookUrl());
 
 
             self.warningThreshold(self.settings.settings.plugins.cvprinting.warningThreshold());
