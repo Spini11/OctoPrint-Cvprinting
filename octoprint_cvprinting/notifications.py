@@ -115,6 +115,10 @@ class Notificationscvprinting:
         if data.get("image") and os.path.exists(data.get("image")):
             with open(data.get("image"), "rb") as f:
                 payload["Image"] = base64.b64encode(f.read()).decode("utf-8")
+        # Validate webhookUrl before making the request
+        if not webhookUrl or not isinstance(webhookUrl, str) or webhookUrl.strip() == "":
+            self._logger.info("Error sending custom webhook notification: webhookUrl is missing or invalid")
+            return 1
         response = requests.post(webhookUrl, json=payload)
         if response.status_code != 200:
             self._logger.info(f"Error sending custom webhook notification: {response.status_code} {response.text}")
