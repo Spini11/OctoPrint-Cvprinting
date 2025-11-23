@@ -119,11 +119,17 @@ class Notificationscvprinting:
         if not webhookUrl or not isinstance(webhookUrl, str) or webhookUrl.strip() == "":
             self._logger.info("Error sending custom webhook notification: webhookUrl is missing or invalid")
             return 1
-        response = requests.post(webhookUrl, json=payload, timeout=10)
-        if response.status_code != 200:
-            self._logger.info(f"Error sending custom webhook notification: {response.status_code} {response.text}")
+        response = None
+        try:
+            response = requests.post(webhookUrl, json=payload, timeout=10)
+            if not response or response.status_code != 200:
+                self._logger.info(f"Error sending custom webhook notification: {response.status_code} {response.text}")
+                return 1
+        except requests.exceptions.RequestException as e:
+            self._logger.info(f"Exception sending custom webhook notification: {e}")
             return 1
         return 0
+
 
     def notify_telegram(self, type, data):
         botToken = self.telegramSettings.get("botToken")
@@ -140,13 +146,21 @@ class Notificationscvprinting:
         #Add image to payload
         url = f"https://api.telegram.org/bot{botToken}/"
         response = None
-        if data.get("image") and os.path.exists(data.get("image")):
-            files = {"photo": open(data.get("image"), "rb")}
-            response = requests.post(url + "sendPhoto", data=payload, files=files)
-        else:
-            payload["text"] = payload["caption"]
-            response = requests.post(url + "sendMessage", data=payload)
-        if not response or response.status_code != 200:
-            self._logger.info(f"Error sending telegram notification: {response.status_code} {response.text}")
+        try:
+            if data.get("image") and os.path.exists(data.get("image")):
+                with open(data.get("image"), "rb") as img_file:
+                    files = {"photo": img_file}
+                    response = requests.post(url + "sendPhoto", data=payload, files=files)
+            else:
+                payload["text"] = payload["caption"]
+                response = requests.post(url + "sendMessage", data=payload)
+
+            if not response or response.status_code != 200:
+                self._logger.info(
+                    f"Error sending telegram notification: {getattr(response, 'status_code', None)} {getattr(response, 'text', None)}"
+                )
+                return 1
+        except requests.exceptions.RequestException as e:
+            self._logger.info(f"Exception sending telegram notification: {e}")
             return 1
         return 0
