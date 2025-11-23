@@ -206,7 +206,7 @@ $(function(){
             }).fail(function (jqXHR) {
                 self.telegramTestNotificationError(true);
                 self.telegramTestNotificationMessageShow(false);
-                self.telegramTestNotificationMessage(jqXHR.responseJSON.message);
+                self.telegramTestNotificationMessage(jqXHR.responseJSON?.message || "An unknown error occurred.");
             });
         }
 
@@ -220,7 +220,7 @@ $(function(){
             }).fail(function (jqXHR) {
                 self.discordTestNotificationError(true);
                 self.discordTestNotificationMessageShow(false);
-                self.discordTestNotificationMessage(jqXHR.responseJSON.message);
+                self.discordTestNotificationMessage(jqXHR.responseJSON?.message || "An unknown error occurred.");
             });
         }
 
@@ -234,7 +234,7 @@ $(function(){
             }).fail(function (jqXHR) {
                 self.customWebhookTestNotificationError(true);
                 self.customWebhookTestNotificationMessageShow(false);
-                self.customWebhookTestNotificationMessage(jqXHR.responseJSON.message);
+                self.customWebhookTestNotificationMessage(jqXHR.responseJSON?.message || "An unknown error occurred.");
             });
         }
 
