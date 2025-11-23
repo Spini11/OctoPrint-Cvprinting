@@ -119,7 +119,7 @@ class Notificationscvprinting:
         if not webhookUrl or not isinstance(webhookUrl, str) or webhookUrl.strip() == "":
             self._logger.info("Error sending custom webhook notification: webhookUrl is missing or invalid")
             return 1
-        response = requests.post(webhookUrl, json=payload)
+        response = requests.post(webhookUrl, json=payload, timeout=10)
         if response.status_code != 200:
             self._logger.info(f"Error sending custom webhook notification: {response.status_code} {response.text}")
             return 1
