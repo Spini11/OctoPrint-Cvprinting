@@ -85,6 +85,9 @@ $(function(){
             self.telegramTestNotificationMessageShow(false);
             self.discordTestNotificationError(false);
             self.discordTestNotificationMessageShow(false);
+            self.customWebhookTestNotificationError(false);
+            self.customWebhookTestNotificationMessageShow(false);
+            self.customWebhookTestNotificationMessage("");
             self.discordTestNotificationMessage("");
             self.telegramTestNotificationMessage("");
             if (self.telegramToken() !== "" && self.telegramChatId() !== ""){
