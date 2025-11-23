@@ -25,25 +25,25 @@
             </div>
             <!-- Pause on error -->
             <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px;">
-                <label class="PauseIssueSettingsLabel" for="pause_on_issue" 
+                <label class="PauseIssueSettingsLabel" for="pause_on_issue_sidebar" 
                        style="font-size: 14px; margin: 0;">Pause on error</label>
-                <input type="checkbox" id="pause_on_issue" data-bind="checked: pauseOnError" 
+                <input type="checkbox" id="pause_on_issue_sidebar" data-bind="checked: pauseOnError" 
                        style="margin: 0; transform: translateY(1px);">
             </div>
     
             <!-- Pause confidence -->
             <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px;">
-                <label for="confidence_level" class="ConfidenceLevelSettingsLabel" 
+                <label for="confidence_level_sidebar" class="ConfidenceLevelSettingsLabel" 
                        style="font-size: 14px; margin: 0;">Pause confidence</label>
-                <input type="number" id="confidence_level" min="0" max="100" step="5" data-bind="value: pauseConfidence"
+                <input type="number" id="confidence_level_sidebar" min="0" max="100" step="5" data-bind="value: pauseConfidence"
                        style="width: 60px; font-size: 14px; text-align: right; margin: 0;">
             </div>
     
             <!-- Warning confidence -->
             <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px;">
-                <label for="warning_level" class="WarningLevelSettingsLabel" 
+                <label for="warning_level_sidebar" class="WarningLevelSettingsLabel" 
                        style="font-size: 14px; margin: 0;">Warning confidence</label>
-                <input type="number" id="warning_level" min="0" max="100" step="5" data-bind="value: warningConfidence" 
+                <input type="number" id="warning_level_sidebar" min="0" max="100" step="5" data-bind="value: warningConfidence" 
                        style="width: 60px; font-size: 14px; text-align: right; margin: 0;">
             </div>
         </form>

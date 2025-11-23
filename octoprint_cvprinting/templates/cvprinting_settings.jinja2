@@ -137,7 +137,7 @@
         </div>
 
         <div class="control-group" style="display: flex; align-items: center; gap: 10px;">
-            <label for="WebhookUrl" class="WebhookUrlSettingsLabel" style="flex: 1;">Webhook URL</label>
+            <label for="WebhookUrl" class="WebhookUrlSettingsLabel" style="flex: 1;">Discord Webhook URL</label>
             <input 
                 type="text" 
                 id="WebhookUrl" 
@@ -152,6 +152,33 @@
             </button>
             <p style="color: red; font-size: 0.9em;" data-bind="visible: discordTestNotificationError, text: discordTestNotificationMessage"></p>
             <p style="color: green; font-size: 0.9em;" data-bind="visible: discordTestNotificationMessageShow, text: discordTestNotificationMessage"></p>
+        </div>
+        <label class="notificationsLabel" style="font-weight: bold; font-size: 1em; display: block; margin-top: 20px;">Custom Webhook</label>
+        <div class="control-group" style="display: flex; align-items: baseline; gap: 10px;">
+            <input 
+                type="checkbox"
+                id="customWebhook_enabled" 
+                data-bind="checked: customWebhookEnabled, enable: customWebhookUrl()" 
+                style="margin-right: 10px; transform: translateY(2px);">
+            <label for="customWebhook_enabled" class="CustomWebhookEnabledLabel">Enable Custom Webhook Notifications</label>
+        </div> 
+
+        <div class="control-group" style="display: flex; align-items: center; gap: 10px;">
+            <label for="customWebhookUrl" class="CustomWebhookUrlSettingsLabel" style="flex: 1;">Custom Webhook URL</label>
+            <input 
+                type="text" 
+                id="customWebhookUrl" 
+                style="flex: 2; max-width: 300px; padding: 5px; border: 1px solid #ccc; border-radius: 4px;" 
+                data-bind="value: customWebhookUrl">
+        </div>  
+        <div class="control-group" style="display: flex; flex-direction: column; align-items: flex-start; gap: 5px; margin-top: 10px;">
+            <button type="button" id="customWebhook_test" 
+                style="padding: 5px 10px;" 
+                data-bind="click: sendCustomWebhookTest, enable: customWebhookUrl()">
+                Send Test Notification to Custom Webhook
+            </button>
+            <p style="color: red; font-size: 0.9em;" data-bind="visible: customWebhookTestNotificationError, text: customWebhookTestNotificationMessage"></p>
+            <p style="color: green; font-size: 0.9em;" data-bind="visible: customWebhookTestNotificationMessageShow, text: customWebhookTestNotificationMessage"></p>
         </div>
                 
         <label class="notificationsLabel" style="font-weight: bold; font-size: 1em; display: block; margin-top: 20px;">Telegram</label>

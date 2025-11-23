@@ -1,11 +1,13 @@
 import os
 from discordwebhook import Discord
 import requests
+import base64
 
 class Notificationscvprinting:
     destinations = []
     discordSettings = {}
     telegramSettings = {}
+    customWebhookSettings = {}
     _warningTemplate = "CVPrinting has detected possible {label} with confidence {conf:.0f} which triggered a warning"
     _errorTemplate = "CVPrinting has detected possible {label} with confidence {conf:.0f} which triggered a printer PAUSE"
     _testTemplate = "This is a test notification"
@@ -30,6 +32,13 @@ class Notificationscvprinting:
         else:
             if "telegram" in self.destinations:
                 self.destinations.remove("telegram")
+        if self._settings.get(["customWebhookNotifications"]):
+            if not "customWebhook" in self.destinations:
+                self.destinations.append("customWebhook")
+        else:
+            if "customWebhook" in self.destinations:
+                self.destinations.remove("customWebhook")
+        self.customWebhookSettings["webhookUrl"] = self._settings.get(["customWebhookUrl"])
         self.discordSettings["webhookUrl"] = self._settings.get(["discordWebhookUrl"])
         self.telegramSettings["botToken"] = self._settings.get(["telegramBotToken"])
         self.telegramSettings["chatId"] = self._settings.get(["telegramChatId"])
@@ -42,6 +51,8 @@ class Notificationscvprinting:
                 return self.notify_discord("Test", data)
             elif data.get("target") == "telegram":
                 return self.notify_telegram("Test", data)
+            elif data.get("target") == "customWebhook":
+                return self.notify_custom_webhook("Test", data)
             return
         #Update notification settings
         self.getConfig()
@@ -49,6 +60,8 @@ class Notificationscvprinting:
             self.notify_discord(type, data)
         if "telegram" in self.destinations:
             self.notify_telegram(type, data)
+        if "customWebhook" in self.destinations:
+            self.notify_custom_webhook(type, data)
         return    
     
     def notify_discord(self, type, data):
@@ -84,6 +97,39 @@ class Notificationscvprinting:
             self._logger.info(f"Error sending discord notification: {response.status_code} {response.text}")
             return 1
         return 0
+    
+    def notify_custom_webhook(self, type, data):
+        webhookUrl = self.customWebhookSettings.get("webhookUrl")
+        payload = {}
+        payload["Author"] = "CVPrinting"
+        payload["Title"] = "Possible issue detected"
+        if type == "Warning":
+            payload["Message"] = self._warningTemplate.format(label=data.get("label"), conf=data.get("conf"))
+        elif type == "Error":
+            payload["Message"] = self._errorTemplate.format(label=data.get("label"), conf=data.get("conf"))
+        #If type is test, change webhookURL to the supplied one
+        elif type == "Test":
+            payload["Message"] = self._testTemplate
+            webhookUrl = data.get("webhook_url")
+        #Add image to payload
+        if data.get("image") and os.path.exists(data.get("image")):
+            with open(data.get("image"), "rb") as f:
+                payload["Image"] = base64.b64encode(f.read()).decode("utf-8")
+        # Validate webhookUrl before making the request
+        if not webhookUrl or not isinstance(webhookUrl, str) or webhookUrl.strip() == "":
+            self._logger.info("Error sending custom webhook notification: webhookUrl is missing or invalid")
+            return 1
+        response = None
+        try:
+            response = requests.post(webhookUrl, json=payload, timeout=10)
+            if not response or response.status_code != 200:
+                self._logger.info(f"Error sending custom webhook notification: {response.status_code} {response.text}")
+                return 1
+        except requests.exceptions.RequestException as e:
+            self._logger.info(f"Exception sending custom webhook notification: {e}")
+            return 1
+        return 0
+
 
     def notify_telegram(self, type, data):
         botToken = self.telegramSettings.get("botToken")
@@ -100,13 +146,21 @@ class Notificationscvprinting:
         #Add image to payload
         url = f"https://api.telegram.org/bot{botToken}/"
         response = None
-        if data.get("image") and os.path.exists(data.get("image")):
-            files = {"photo": open(data.get("image"), "rb")}
-            response = requests.post(url + "sendPhoto", data=payload, files=files)
-        else:
-            payload["text"] = payload["caption"]
-            response = requests.post(url + "sendMessage", data=payload)
-        if not response or response.status_code != 200:
-            self._logger.info(f"Error sending telegram notification: {response.status_code} {response.text}")
+        try:
+            if data.get("image") and os.path.exists(data.get("image")):
+                with open(data.get("image"), "rb") as img_file:
+                    files = {"photo": img_file}
+                    response = requests.post(url + "sendPhoto", data=payload, files=files)
+            else:
+                payload["text"] = payload["caption"]
+                response = requests.post(url + "sendMessage", data=payload)
+
+            if not response or response.status_code != 200:
+                self._logger.info(
+                    f"Error sending telegram notification: {getattr(response, 'status_code', None)} {getattr(response, 'text', None)}"
+                )
+                return 1
+        except requests.exceptions.RequestException as e:
+            self._logger.info(f"Exception sending telegram notification: {e}")
             return 1
         return 0

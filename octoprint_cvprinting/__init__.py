@@ -56,7 +56,7 @@ class cvpluginInit(octoprint.plugin.StartupPlugin,
 
 
     def get_settings_defaults(self):
-        return dict(pausePrintOnIssue=False, pauseThreshold=80, warningThreshold=50, cvprintingSnapshotUrl="", cvprintingStreamUrl="", cvEnabled=True, discordNotifications=False, discordWebhookUrl="", selectedWebcam="classic", telegramNotifications=False, telegramBotToken="", telegramChatId="")
+        return dict(pausePrintOnIssue=False, pauseThreshold=80, warningThreshold=50, cvprintingSnapshotUrl="", cvprintingStreamUrl="", cvEnabled=True, discordNotifications=False, discordWebhookUrl="", selectedWebcam="classic", telegramNotifications=False, telegramBotToken="", telegramChatId="", customWebhookUrl="", customWebhookNotifications=False)
 
     def get_webcam_list(self):
         webcams = octoprint.webcams.get_webcams()
@@ -116,6 +116,10 @@ class cvpluginInit(octoprint.plugin.StartupPlugin,
             if not "chat_id" in flask.request.values or not "token" in flask.request.values:
                 return jsonify({"message": "Error: No chat ID or token specified"}), 400
             value = self._notificationsModule.notify("Test", {"target":"telegram", "chat_id": flask.request.values["chat_id"], "token": flask.request.values["token"]})
+        elif flask.request.values["target"] == "customWebhook":
+            if not "webhook_url" in flask.request.values:
+                return jsonify({"message": "Error: No webhook URL specified"}), 400
+            value = self._notificationsModule.notify("Test", {"target":"customWebhook", "webhook_url": flask.request.values["webhook_url"]})
         else:
             return jsonify({"message": "Error: Invalid target specified"}), 400
         if value == 0:
@@ -123,108 +127,15 @@ class cvpluginInit(octoprint.plugin.StartupPlugin,
         else:
             return jsonify({"message": "Error sending notification, verify inputted data"}), 400
     
-    #API endpoint for obtaining current settings
+    #API endpoint for getting settings - implementation removed due to project requirements change, if you need it please contact me on GitHub, thanks!
     @octoprint.plugin.BlueprintPlugin.route("/get_settings", methods=["POST"])
     def get_settings(self):
-        settings = dict()
-        settings["pausePrintOnIssue"] = self._settings.get(["pausePrintOnIssue"])
-        settings["pauseThreshold"] = self._settings.get(["pauseThreshold"])
-        settings["warningThreshold"] = self._settings.get(["warningThreshold"])
-        settings["selectedWebcam"] = self._settings.get(["selectedWebcam"])
-        settings["cvEnabled"] = self._settings.get(["cvEnabled"])
-        settings["discordNotifications"] = self._settings.get(["discordNotifications"])
-        settings["discordWebhookUrl"] = self._settings.get(["discordWebhookUrl"])
-        settings["telegramNotifications"] = self._settings.get(["telegramNotifications"])
-        settings["telegramBotToken"] = self._settings.get(["telegramBotToken"])
-        settings["telegramChatId"] = self._settings.get(["telegramChatId"])
-        settings["webcams"] = self.get_webcam_list()
-        return jsonify(settings)
+        return jsonify({"message": "Not implemented, if you need it please contact me on GitHub, thanks!"}), 501
     
-    #API endpoint for updating settings
+    #API endpoint for updating settings - implementation removed due to project requirements change, if you need it please contact me on GitHub, thanks!
     @octoprint.plugin.BlueprintPlugin.route("/update_settings", methods=["POST"])
     def update_settings(self):
-        data = flask.request.get_json()
-        if not data:
-            return jsonify({"message": "Error: No data received"}), 400
-        if "pausePrintOnIssue" in data.keys():
-            if not isinstance(data["pausePrintOnIssue"], bool):
-                return jsonify({"message": "Error: Invalid value for pausePrintOnIssue"}), 400
-            self._settings.set(["pausePrintOnIssue"], data["pausePrintOnIssue"])
-        if "pauseThreshold" in data.keys():
-            try:
-                pause_threshold_value = int(data["pauseThreshold"])
-            except ValueError:
-                return jsonify({"message": "Error: Invalid value for pauseThreshold"}), 400  
-            if pause_threshold_value <= 0 or pause_threshold_value > 100:
-                return jsonify({"message": "Error: Invalid value for pauseThreshold"}), 400
-            self._settings.set(["pauseThreshold"], int(pause_threshold_value))
-        if "warningThreshold" in data.keys():
-            try:
-                warning_threshold_value = int(data["warningThreshold"])
-            except ValueError:
-                return jsonify({"message": "Error: Invalid value for warningThreshold"}), 400
-            if warning_threshold_value <= 0 or warning_threshold_value > 100:
-                return jsonify({"message": "Error: Invalid value for warningThreshold"}), 400
-            self._settings.set(["warningThreshold"], int(warning_threshold_value))
-        if "cvprintingSnapshotUrl" in data.keys():
-            if not isinstance(data["cvprintingSnapshotUrl"], str):
-                return jsonify({"message": "Error: Invalid value for cvprintingSnapshotUrl"}), 400
-            self._settings.set(["cvprintingSnapshotUrl"], data["cvprintingSnapshotUrl"])
-            if self._settings.get(["selectedWebcam"]) == "cvprinting" and self._printer.is_printing() and self._settings.get(["cvEnabled"]) and self._webcam:
-                self._webcam["snapshotUrl"] = data["cvprintingSnapshotUrl"]
-        if "cvprintingStreamUrl" in data.keys():
-            if not isinstance(data["cvprintingStreamUrl"], str):
-                return jsonify({"message": "Error: Invalid value for cvprintingStreamUrl"}), 400
-            self._settings.set(["cvprintingStreamUrl"], data["cvprintingStreamUrl"])
-            if self._settings.get(["selectedWebcam"]) == "cvprinting" and self._printer.is_printing() and self._settings.get(["cvEnabled"]) and self._webcam:
-                self._webcam["streamUrl"] = data["cvprintingStreamUrl"]
-        if "selectedWebcam" in data.keys():
-            if not isinstance(data["selectedWebcam"], str):
-                return jsonify({"message": "Error: Invalid value for selectedWebcam"}), 400
-            self._settings.set(["selectedWebcam"], data["selectedWebcam"])
-            if self._printer.is_printing() and self._settings.get(["cvEnabled"]) and self._webcam:
-                webcam = self.get_current_webcam()
-                self._webcam["name"] = webcam["name"]
-                self._webcam["streamUrl"] = webcam["streamUrl"]
-                self._webcam["snapshotUrl"] = webcam["snapshotUrl"]
-        if "cvEnabled" in data.keys():
-            if not isinstance(data["cvEnabled"], bool):
-                return jsonify({"message": "Error: Invalid value for cvEnabled"}), 400
-            tmp = self._settings.get(["cvEnabled"])
-            self._settings.set(["cvEnabled"], data["cvEnabled"])
-            if self._printer.is_printing() and data["cvEnabled"] and not tmp:
-                self.start_monitoring()
-            elif self._printer.is_printing() and not data["cvEnabled"] and tmp:
-                self.stop_monitoring()
-        if "discordwebhookUrl" in data.keys():
-            if not isinstance(data["discordWebhookUrl"], str):
-                return jsonify({"message": "Error: Invalid value for discordWebhookUrl"}), 400
-            self._settings.set(["discordWebhookUrl"], data["discordWebhookUrl"])
-        if "discordNotifications" in data.keys():
-            if not isinstance(data["discordNotifications"], bool):
-                return jsonify({"message": "Error: Invalid value for discordNotifications"}), 400
-            if not self._settings.get(["discordWebhookUrl"]):
-                return jsonify({"message": "Error: No webhook URL found. Can't enable notifications"}), 400
-            self._settings.set(["discordNotifications"], data["discordNotifications"])
-        if "telegramBotToken" in data.keys():
-            if not isinstance(data["telegramBotToken"], str):
-                return jsonify({"message": "Error: Invalid value for telegramBotToken"}), 400
-            self._settings.set(["telegramBotToken"], data["telegramBotToken"])
-        if "telegramChatId" in data.keys():
-            if not isinstance(data["telegramChatId"], str):
-                return jsonify({"message": "Error: Invalid value for telegramChatId"}), 400
-            if not self._settings.get(["telegramBotToken"]):
-                return jsonify({"message": "Error: No bot token found. Can't set chatId"}), 400
-            self._settings.set(["telegramChatId"], data["telegramChatId"])
-        if "telegramNotifications" in data.keys():
-            if not isinstance(data["telegramNotifications"], bool):
-                return jsonify({"message": "Error: Invalid value for telegramNotifications"}), 400
-            if not self._settings.get(["telegramBotToken"]):
-                return jsonify({"message": "Error: No bot token found. Can't enable notifications"}), 400
-            if not self._settings.get(["telegramChatId"]):
-                return jsonify({"message": "Error: No chat ID found. Can't enable notifications"}), 400
-            self._settings.set(["telegramNotifications"], data["telegramNotifications"])
-        return jsonify({"message": "Settings updated"}), 200
+        return jsonify({"message": "Not implemented, if you need it please contact me on GitHub, thanks!"}), 501
             
     
     def get_template_vars(self):
@@ -348,7 +259,7 @@ class cvpluginInit(octoprint.plugin.StartupPlugin,
                 self._logger.debug("cv was enabled while printing")
                 self.start_monitoring()
         for key, value in data.items():
-            if key != "discordNotifications" and key != "telegramNotifications":
+            if key != "discordNotifications" and key != "telegramNotifications" and key != "customWebhookNotifications":
                 self._settings.set([key], value)
         if "discordNotifications" in data.keys():
             if data["discordNotifications"]:
@@ -359,6 +270,15 @@ class cvpluginInit(octoprint.plugin.StartupPlugin,
                     self._settings.set(["discordNotifications"], False)
             else:
                 self._settings.set(["discordNotifications"], False)
+        if "customWebhookNotifications" in data.keys():
+            if data["customWebhookNotifications"]:
+                if self._settings.get(["customWebhookUrl"]):
+                    self._settings.set(["customWebhookNotifications"], True)
+                else:
+                    self._logger.info("Disabling custom webhook notifications, no webhook URL found")
+                    self._settings.set(["customWebhookNotifications"], False)
+            else:
+                self._settings.set(["customWebhookNotifications"], False)
         if "telegramNotifications" in data.keys():
             if data["telegramNotifications"]:
                 if self._settings.get(["telegramBotToken"]) and self._settings.get(["telegramChatId"]):
@@ -410,6 +330,9 @@ class cvpluginInit(octoprint.plugin.StartupPlugin,
             self.start_monitoring()
 
     def is_blueprint_csrf_protected(self):
+        return True
+    
+    def is_template_autoescaped(self):
         return True
     
     def get_update_information(self, *args, **kwargs):

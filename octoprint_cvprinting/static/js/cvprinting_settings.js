@@ -18,6 +18,9 @@ $(function(){
         self.discordTestNotificationError = ko.observable(false);
         self.discordTestNotificationMessageShow = ko.observable(false);
         self.discordTestNotificationMessage = ko.observable();
+        self.customWebhookTestNotificationError = ko.observable(false);
+        self.customWebhookTestNotificationMessageShow = ko.observable(false);
+        self.customWebhookTestNotificationMessage = ko.observable();
         
     
 
@@ -28,6 +31,8 @@ $(function(){
         self.cvprintingStreamUrl = ko.observable();
         self.webhookUrl = ko.observable();
         self.discordEnabled = ko.observable();
+        self.customWebhookEnabled = ko.observable();
+        self.customWebhookUrl = ko.observable();
         self.selectedWebcam = ko.observable();
         self.classicSnapshotUrl = ko.observable();
         self.classicStreamUrl = ko.observable();
@@ -50,15 +55,27 @@ $(function(){
             self.telegramToken(self.settings.settings.plugins.cvprinting.telegramBotToken());
             self.telegramChatId(self.settings.settings.plugins.cvprinting.telegramChatId());
             self.cvprintingEnabled(self.settings.settings.plugins.cvprinting.cvEnabled());
+            self.customWebhookEnabled(self.settings.settings.plugins.cvprinting.customWebhookNotifications());
+            self.customWebhookUrl(self.settings.settings.plugins.cvprinting.customWebhookUrl());
         };
 
         self.onSettingsShown = function() {
+            //Telegram
+            self.telegramToken(self.settings.settings.plugins.cvprinting.telegramBotToken());
+            self.telegramChatId(self.settings.settings.plugins.cvprinting.telegramChatId());
+
+            //Custom Webhook
+            self.customWebhookEnabled(self.settings.settings.plugins.cvprinting.customWebhookNotifications());
+            self.customWebhookUrl(self.settings.settings.plugins.cvprinting.customWebhookUrl());
+            //Discord
+            self.discordEnabled(self.settings.settings.plugins.cvprinting.discordNotifications());
+            self.webhookUrl(self.settings.settings.plugins.cvprinting.discordWebhookUrl());
+
+
             self.warningThreshold(self.settings.settings.plugins.cvprinting.warningThreshold());
             self.pauseThreshold(self.settings.settings.plugins.cvprinting.pauseThreshold());
             self.pauseOnError(self.settings.settings.plugins.cvprinting.pausePrintOnIssue());
             self.selectedWebcam(self.settings.settings.plugins.cvprinting.selectedWebcam());
-            self.telegramToken(self.settings.settings.plugins.cvprinting.telegramBotToken());
-            self.telegramChatId(self.settings.settings.plugins.cvprinting.telegramChatId());
             self.cvprintingEnabled(self.settings.settings.plugins.cvprinting.cvEnabled());
             self.clearErrors();
             self.telegramConnected(false);
@@ -68,6 +85,9 @@ $(function(){
             self.telegramTestNotificationMessageShow(false);
             self.discordTestNotificationError(false);
             self.discordTestNotificationMessageShow(false);
+            self.customWebhookTestNotificationError(false);
+            self.customWebhookTestNotificationMessageShow(false);
+            self.customWebhookTestNotificationMessage("");
             self.discordTestNotificationMessage("");
             self.telegramTestNotificationMessage("");
             if (self.telegramToken() !== "" && self.telegramChatId() !== ""){
@@ -102,6 +122,8 @@ $(function(){
             self.settings.settings.plugins.cvprinting.pausePrintOnIssue(self.pauseOnError());
             self.settings.settings.plugins.cvprinting.discordWebhookUrl(self.webhookUrl());
             self.settings.settings.plugins.cvprinting.discordNotifications(self.discordEnabled());
+            self.settings.settings.plugins.cvprinting.customWebhookNotifications(self.customWebhookEnabled());
+            self.settings.settings.plugins.cvprinting.customWebhookUrl(self.customWebhookUrl());
             self.settings.settings.plugins.cvprinting.cvprintingSnapshotUrl(self.cvprintingSnapshotUrl());
             self.settings.settings.plugins.cvprinting.cvprintingStreamUrl(self.cvprintingStreamUrl());
             self.settings.settings.plugins.cvprinting.cvEnabled(self.cvprintingEnabled());
@@ -187,7 +209,7 @@ $(function(){
             }).fail(function (jqXHR) {
                 self.telegramTestNotificationError(true);
                 self.telegramTestNotificationMessageShow(false);
-                self.telegramTestNotificationMessage(jqXHR.responseJSON.message);
+                self.telegramTestNotificationMessage(jqXHR.responseJSON?.message || "An unknown error occurred.");
             });
         }
 
@@ -201,7 +223,21 @@ $(function(){
             }).fail(function (jqXHR) {
                 self.discordTestNotificationError(true);
                 self.discordTestNotificationMessageShow(false);
-                self.discordTestNotificationMessage(jqXHR.responseJSON.message);
+                self.discordTestNotificationMessage(jqXHR.responseJSON?.message || "An unknown error occurred.");
+            });
+        }
+
+        self.sendCustomWebhookTest = function() {
+            var url = OctoPrint.getBlueprintUrl("cvprinting") + "test_notifications";
+            OctoPrint.post(url, {target: "customWebhook", webhook_url: self.customWebhookUrl()})
+            .done(function(response) {
+                self.customWebhookTestNotificationError(false);
+                self.customWebhookTestNotificationMessageShow(true);
+                self.customWebhookTestNotificationMessage(response.message);
+            }).fail(function (jqXHR) {
+                self.customWebhookTestNotificationError(true);
+                self.customWebhookTestNotificationMessageShow(false);
+                self.customWebhookTestNotificationMessage(jqXHR.responseJSON?.message || "An unknown error occurred.");
             });
         }
 

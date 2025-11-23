@@ -75,6 +75,30 @@ After installation, configure the plugin by navigating to **Settings > CVPrintin
 6. (Optional) Use "Send Test Notification to Telegram" button to test notifications.
 7. Save
 
+- **Custom Webhook Settings**:
+1. Input your custom webhook URL into the **Custom Webhook URL** field in the CVPrinting settings.
+2. Tick the "Enable Custom Webhook Notifications" checkbox.
+3. (Optional) Use "Send Test Notification to Custom Webhook" button to test notifications
+4. Save
+
+   ##### Webhook Payload Format
+
+      When a notification is sent to your custom webhook, the following JSON payload is POSTed to the provided URL:
+      ```json
+      {
+      "Author": "CVPrinting",
+      "Title": "Possible issue detected",
+      "Message": "<message text>",
+      "Image": "<base64-encoded image data, optional>"
+      }
+      ```
+      - `Author`: Always `"CVPrinting"`.
+      - `Title`: Always `"Possible issue detected"`.
+      - `Message`: This contains information about the warning, error, or test message.
+      - `Image` (optional): If available, contains a base64-encoded image file related to the event. Otherwise, this field is omitted.
+
+      The data is sent as a JSON body in an HTTP POST request to the specified webhook URL.
+
 ---
 
 ## Usage
